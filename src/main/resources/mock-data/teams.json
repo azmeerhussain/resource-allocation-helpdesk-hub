@@ -1,0 +1,4 @@
+[
+  { "id": "TEAM-CS763-01", "name": "Team Alpha", "courseGroupId": "CG-CS763-F26", "memberIds": ["u-stu-01", "u-stu-02"] },
+  { "id": "TEAM-CS763-02", "name": "Team Bravo", "courseGroupId": "CG-CS763-F26", "memberIds": ["u-stu-03"] }
+]

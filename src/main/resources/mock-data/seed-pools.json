@@ -1,0 +1,8 @@
+[
+  { "name": "JetBrains All Products - Fall 2026", "type": "LICENSE_KEY", "vendor": "JetBrains", "courseGroupId": null,
+    "assets": [ { "label": "Seat #1", "secretValue": "DEMO-JB-0001-XXXX" }, { "label": "Seat #2", "secretValue": "DEMO-JB-0002-XXXX" } ] },
+  { "name": "AWS Educate $100 Vouchers - Fall 2026", "type": "CLOUD_CREDIT_VOUCHER", "vendor": "AWS Educate", "courseGroupId": "CG-CS763-F26", "defaultValueAmount": 100.00,
+    "assets": [ { "label": "Voucher #1", "secretValue": "DEMO-AWS-VOUCHER-0001", "valueAmount": 100.00 } ] },
+  { "name": "Analytics Tracking IDs", "type": "TRACKING_PARAMETER", "vendor": "Campus Analytics",
+    "assets": [ { "label": "Tracking ID #1", "secretValue": "DEMO-TRK-0001" } ] }
+]

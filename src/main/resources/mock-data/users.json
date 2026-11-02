@@ -1,0 +1,8 @@
+[
+  { "id": "u-admin-01", "name": "Portal Admin", "email": "admin@pp.example.edu", "role": "ADMIN" },
+  { "id": "u-inst-01", "name": "Dr. Instructor", "email": "instructor@pp.example.edu", "role": "INSTRUCTOR", "courseGroupIds": ["CG-CS763-F26"] },
+  { "id": "u-ta-01", "name": "TA One", "email": "ta1@pp.example.edu", "role": "TA", "courseGroupIds": ["CG-CS763-F26"] },
+  { "id": "u-stu-01", "name": "Student One", "email": "s1@pp.example.edu", "role": "STUDENT", "teamIds": ["TEAM-CS763-01"] },
+  { "id": "u-stu-02", "name": "Student Two", "email": "s2@pp.example.edu", "role": "STUDENT", "teamIds": ["TEAM-CS763-01"] },
+  { "id": "u-stu-03", "name": "Student Three", "email": "s3@pp.example.edu", "role": "STUDENT", "teamIds": ["TEAM-CS763-02"] }
+]
