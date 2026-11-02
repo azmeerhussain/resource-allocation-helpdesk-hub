@@ -13,11 +13,15 @@
 | AI tool | Claude (Anthropic) agentic session (Claude Code-based harness), model `claude-opus-5-5` (see `Agent_environment.md`) |
 | Chat / session link | https://claude.ai/code/session_01VYTSL9tbQAUzzMVpp9wZR6 |
 
-Design-aid prompts used (verbatim from the student):
+Exact prompts typed by the student (verbatim, typos kept):
 
-1. *"ive given you access to a folder that has a project in it for one of my classes, before you do anything just read through it an get an understanding of what the project is asking."*
-2. *"so lets set up the stuff that needs to be done for week 1? … what do you need from me?"*
-3. *"i think we only do the first deliverable and nothing extra. yes on the stack [Java 21 + Spring Boot 3 + Maven + PostgreSQL, backend only]. go with the options that give me the least work and follow all academic integrity rules"*
+1. "ive given you access to a folder that has a project in it for one of my classes, before youdo anything just read through it an get an understanding of what the project is asking. then give me a short understanding too cause its too long for m eto read"
+2. "so lets set up the stuff that needs to be done for week 1? its dues 6am nov 3rd so i only have today to wkron it. what do you need from me?"
+3. "i think we only do the first deiveryably and nthing extra. yes on the stack. go with the optioins that give me the least work and follow all acedemic integrity rules / ll open chrome so you have access just open all necesasry pages and ill log into them"
+4. "im reading through the ai usage part, is it supposed to be 95% generated? in terms of the isntructions?"
+5. "okay sweet so what am i supposed to do next? just make sure you go through the doc and follow all the urles to the t cause this professor is very anal about that"
+
+(Status messages that contained no instructions, such as "okay the github is connecctd", are in the full export: `docs/ai-history/claude-session-export.md`.)
 
 The agent derived this spec from the official Domain 2 description in `CS763_ProjectDescription.docx`:
 > "This service handles the distribution of critical project assets, logging tracking parameters, software license keys, and cloud credit vouchers across active course groups and student project teams."

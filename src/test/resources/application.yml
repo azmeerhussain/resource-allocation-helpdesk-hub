@@ -1,4 +1,4 @@
-# AI Contribution Weight: [95%] AI Generated / [5%] Human Refactored
+# AI Contribution Weight: [100%] AI Generated / [0%] Human Refactored
 # Test profile: in-memory H2 so unit tests run without PostgreSQL.
 spring:
   application:
