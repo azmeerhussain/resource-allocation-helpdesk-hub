@@ -13,7 +13,7 @@ CS763 Secure Software Development (BU MET), Project Portal **Domain 2**. A singl
 | [`Prompt_test_log.md`](Prompt_test_log.md) | Initial prompts and generated code |
 | [`.github/workflows/devsecops.yml`](.github/workflows/devsecops.yml) | CI/CD DevSecOps pipeline (Build → Docker → Trivy → Semgrep → SonarQube) |
 | [`Dockerfile`](Dockerfile), [`docker-compose.yml`](docker-compose.yml) | Multi-stage image and the app + PostgreSQL stack |
-| [`docs/pipeline-logs/`](docs/pipeline-logs/) | Verified pipeline execution log |
+| [`docs/pipeline-logs/`](docs/pipeline-logs/README.md) | Verified pipeline execution log (summary + raw logs) |
 | [`code_AI_history.md`](code_AI_history.md) | AI interaction history |
 
 ## Run locally

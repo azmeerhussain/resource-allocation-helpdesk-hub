@@ -178,6 +178,7 @@ The sandbox's network allowlist blocks Maven Central and Docker Hub (see `Agent_
 
 | Check | Result | Evidence |
 |---|---|---|
-| `mvn -B verify` (2 unit tests: context load + `/api/v1/ping`) | see pipeline log | `docs/pipeline-logs/` |
-| `docker compose up` + `GET /actuator/health` → `UP` | see pipeline log | `docs/pipeline-logs/` |
-| `GET /api/v1/ping` → `{"status":"UP", ...}` | see pipeline log | `docs/pipeline-logs/` |
+| `mvn -B verify` (2 unit tests: context load + `/api/v1/ping`) | ✅ `Tests run: 2, Failures: 0, Errors: 0` | `docs/pipeline-logs/run-41520100815-full.txt` |
+| `docker compose up` + `GET /actuator/health` | ✅ `{"status":"UP"}`, app and db containers `(healthy)` | same log, job "Docker Build, Smoke Test & Trivy Scans" |
+| `GET /api/v1/ping` | ✅ `{"service":"resource-allocation-helpdesk-hub","status":"UP",...}` | same log |
+| Trivy / Semgrep / SonarQube Cloud | ✅ all ran, non-blocking | `docs/pipeline-logs/README.md` |
