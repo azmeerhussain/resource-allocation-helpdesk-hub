@@ -8,7 +8,7 @@
 # AI Contribution    : 100% AI generated / 0% human refactored (naive PA2 baseline, no security by design)
 # Human Modifications: None
 # Verification       : docker compose up + smoke-test.sh in CI (DevSecOps pipeline, job functional-docker)
-#                      Human review: PENDING (student to sign off: name, date, what was checked)
+#                      Human review: Azmeer Hussain, 2026-11-16 - reviewed, approves the ticket by just typing “IT Director” as the name, which shows anyone can approve
 # Confidence         : Medium
 # ======================================================================================
 # End-to-end smoke test against the running docker compose stack (used by CI).

@@ -8,7 +8,7 @@
  * AI Contribution    : 100% AI generated / 0% human refactored (naive PA2 baseline, no security by design)
  * Human Modifications: None
  * Verification       : Executed in CI (mvn -B verify) as the API integration test suite
- *                      Human review: PENDING (student to sign off: name, date, what was checked)
+ *                      Human review: Azmeer Hussain, 2026-11-16 - reviewed all tests, covers the full ticket flow and some invalid transitions, nothing tests negative quantities, two allocations at once or rejecting an approved ticket
  * Confidence         : Medium
  * ======================================================================================
  */

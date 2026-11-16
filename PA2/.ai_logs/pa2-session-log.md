@@ -91,3 +91,5 @@
 **Agent output:** Opened `TicketService.java` on GitHub in the student's Chrome, showed where the header is (lines 1–14, the "Human review" line), and offered to apply a one-line note per file written by the student.
 
 **Student message (verbatim, per-file review notes):** see the `Human review:` line in each file header under `PA2/functional-codebase/`. The agent copied each note **exactly as written** by the student into the matching header: 26 files (controllers, DTOs, domain classes, enums, services, exceptions, `schema.sql`, `application.yml`). Files the student did not list stay `PENDING`: tests, repositories, the main class, `MockDataLoader`, `Dockerfile`, `docker-compose.yml`, `pom.xml`, `smoke-test.sh`.
+
+**Student message (verbatim, second batch of per-file review notes):** covers the tests, repositories, main class, `MockDataLoader`, mock-data README, `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `pom.xml` and `smoke-test.sh`. The agent copied each note exactly as written into the matching header. Every file in `PA2/functional-codebase/` now has a student sign-off.

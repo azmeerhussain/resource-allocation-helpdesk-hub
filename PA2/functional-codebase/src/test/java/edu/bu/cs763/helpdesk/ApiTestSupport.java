@@ -8,7 +8,7 @@
  * AI Contribution    : 100% AI generated / 0% human refactored (naive PA2 baseline, no security by design)
  * Human Modifications: None
  * Verification       : Executed in CI (mvn -B verify) as the API integration test suite
- *                      Human review: PENDING (student to sign off: name, date, what was checked)
+ *                      Human review: Azmeer Hussain, 2026-11-16 - reviewed helper methods, approves and allocates by just sending a name, so the tests assume anyone can do it
  * Confidence         : Medium
  * ======================================================================================
  */

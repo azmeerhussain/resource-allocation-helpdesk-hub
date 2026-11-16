@@ -7,7 +7,7 @@
 # AI Contribution    : 100% AI generated / 0% human refactored (naive PA2 baseline, no security by design)
 # Human Modifications: None
 # Verification       : docker compose up + smoke-test.sh in CI (DevSecOps pipeline, job functional-docker)
-#                      Human review: PENDING (student to sign off: name, date, what was checked)
+#                      Human review: Azmeer Hussain, 2026-11-16 - reviewed, no USER line so the container runs as root, unlike PA1
 # Confidence         : Medium
 # ======================================================================================
 # ---------- Stage 1: build ----------
