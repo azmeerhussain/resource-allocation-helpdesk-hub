@@ -77,3 +77,9 @@
 > lets go with option A
 
 **Agent output:** Moved `functional-codebase/`, the PA2 logs and the PA2 pipeline log into `PA2/` with no code changes. Added the root `.ai_logs/README.md` index and `PA2/README.md`, and updated the pipeline paths, file headers and log references.
+
+## PA2-04 · 2026-11-16 · Journal template
+**Student prompt (verbatim):**
+> before we move forward, forgot a file in the folder that you should go over, its the template for the journal entry that didnt load before. ill do the file headers now
+
+**Agent output:** Read `PA2-Journal.docx` (course template). Restructured `conceptual_journal.md` to the template's sections. Moved the student's Entry 1 verbatim into 2.2, filled Section 1 with factual tool details, added the student's code review as the first row of Section 4, and left every reflection section marked ✍️ for the student.
