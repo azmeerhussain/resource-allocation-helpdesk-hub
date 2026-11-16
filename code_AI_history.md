@@ -75,10 +75,10 @@ Each entry records one AI agent interaction that generated or modified code: wha
 ---
 
 # PA2 entries
-From PA2 on, the full AI history lives in [`.ai_logs/`](.ai_logs/) (`pa2-session-log.md`). Commits use `AI:` / `HUMAN:` / `HYBRID:` labels.
+From PA2 on, the full AI history lives in [`PA2/.ai_logs/`](PA2/.ai_logs/) (`pa2-session-log.md`, `conceptual_journal.md`). Commits use `AI:` / `HUMAN:` / `HYBRID:` labels.
 
 ## PA2-01 · 2026-11-16 · functional-codebase (naive baseline)
-- **Prompt (student, verbatim):** see `.ai_logs/pa2-session-log.md` → PA2-01
-- **Files:** `functional-codebase/**`, `.github/workflows/devsecops.yml` (new jobs)
+- **Prompt (student, verbatim):** see `PA2/.ai_logs/pa2-session-log.md` → PA2-01
+- **Files:** `PA2/functional-codebase/**`, `.github/workflows/devsecops.yml` (new jobs)
 - **Contribution:** 100% AI generated / 0% human refactored
 - **Verification:** CI run 43954567816: 19/19 API integration tests pass, docker compose smoke test passes, Semgrep, SonarQube and Trivy all ran (non-blocking). Human review: pending.
