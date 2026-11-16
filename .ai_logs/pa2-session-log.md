@@ -52,3 +52,15 @@
 8. "Comprehensive logging metrics": every action is logged with SLF4J, ticket state changes are stored as `ticket_event` history, and `GET /tickets/{id}` returns metrics (items, quantities, voucher total, hours open, status changes).
 9. `POST /assets/{id}/return` takes an optional `allocationId`. Without one, the oldest outstanding check-out is returned.
 10. Requesters, courses, labs and IT directors are external, so they are free-text IDs backed by static mock data (`mock-data/academic-units.json`).
+
+## PA2-02 · 2026-11-16 · Guidance for the human code review
+**Student prompt (verbatim):**
+> point me to the files that need reviewing too
+
+**Agent output:** A prioritised list of the files in `functional-codebase/` (read closely / skim / quick glance), with line numbers of the logic worth checking and instructions for the header sign-off and the journal.
+
+**Student message (verbatim, start):**
+> Code review journal (Nov 16)
+> Overall the AI built what I asked for. …
+
+*(The full entry was written by the student and saved verbatim as Entry 1 in `conceptual_journal.md`. The agent only formatted the headings.)*
