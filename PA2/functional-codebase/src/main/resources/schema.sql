@@ -7,7 +7,7 @@
 -- AI Contribution    : 100% AI generated / 0% human refactored (naive PA2 baseline, no security by design)
 -- Human Modifications: None
 -- Verification       : API integration tests (AssetApiIntegrationTest, TicketApiIntegrationTest) + docker compose smoke test in CI
---                      Human review: PENDING (student to sign off: name, date, what was checked)
+--                      Human review: Azmeer Hussain, 2026-11-16 - reviewed the tables, no constraints so stock can go negative, no NOT NULLs, no foreign key from allocation to asset
 -- Confidence         : Medium
 -- ======================================================================================
 -- Database schema for the Resource Allocation & Help Desk Hub (Domain 2)

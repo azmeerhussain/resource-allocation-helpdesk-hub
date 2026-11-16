@@ -8,7 +8,7 @@
  * AI Contribution    : 100% AI generated / 0% human refactored (naive PA2 baseline, no security by design)
  * Human Modifications: None
  * Verification       : API integration tests (AssetApiIntegrationTest, TicketApiIntegrationTest) + docker compose smoke test in CI
- *                      Human review: PENDING (student to sign off: name, date, what was checked)
+ *                      Human review: Azmeer Hussain, 2026-11-16 - reviewed allocate() and transition(), found race condition + shared license key, the key is printed in the logs, rejecting an approved ticket leaves assets stuck as RESERVED, and a negative quantity or voucher amount adds stock/balance instead of taking it away
  * Confidence         : Medium
  * ======================================================================================
  */

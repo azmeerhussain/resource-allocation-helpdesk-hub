@@ -8,7 +8,7 @@
  * AI Contribution    : 100% AI generated / 0% human refactored (naive PA2 baseline, no security by design)
  * Human Modifications: None
  * Verification       : API integration tests (AssetApiIntegrationTest, TicketApiIntegrationTest) + docker compose smoke test in CI
- *                      Human review: PENDING (student to sign off: name, date, what was checked)
+ *                      Human review: Azmeer Hussain, 2026-11-16 - reviewed fields, reviewedBy and allocatedBy are plain text with nothing tying them to a real user
  * Confidence         : Medium
  * ======================================================================================
  */

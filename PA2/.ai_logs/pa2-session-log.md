@@ -83,3 +83,11 @@
 > before we move forward, forgot a file in the folder that you should go over, its the template for the journal entry that didnt load before. ill do the file headers now
 
 **Agent output:** Read `PA2-Journal.docx` (course template). Restructured `conceptual_journal.md` to the template's sections. Moved the student's Entry 1 verbatim into 2.2, filled Section 1 with factual tool details, added the student's code review as the first row of Section 4, and left every reflection section marked ✍️ for the student.
+
+## PA2-05 · 2026-11-16 · Human review sign-off in the file headers
+**Student prompt (verbatim):**
+> cant seem to locate the headers in the github structure, lets open it in chrome and see it side by side
+
+**Agent output:** Opened `TicketService.java` on GitHub in the student's Chrome, showed where the header is (lines 1–14, the "Human review" line), and offered to apply a one-line note per file written by the student.
+
+**Student message (verbatim, per-file review notes):** see the `Human review:` line in each file header under `PA2/functional-codebase/`. The agent copied each note **exactly as written** by the student into the matching header: 26 files (controllers, DTOs, domain classes, enums, services, exceptions, `schema.sql`, `application.yml`). Files the student did not list stay `PENDING`: tests, repositories, the main class, `MockDataLoader`, `Dockerfile`, `docker-compose.yml`, `pom.xml`, `smoke-test.sh`.
