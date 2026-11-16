@@ -34,4 +34,21 @@
 
 **Note:** The prompt deliberately contains no security, validation, authentication or encryption requirements (PA2 naive baseline). The agent added none beyond what the prompt asked for.
 
-**Agent output:** *(filled in below as the work progresses)*
+**Agent output (2026-11-16):**
+- Created `functional-codebase/`: a Spring Boot 3.3 / Java 21 / PostgreSQL service with 5 entities (Asset, Ticket, TicketItem, TicketEvent, Allocation), 4 repositories, 3 services, 2 controllers, `schema.sql`, mock data, a multi-stage Dockerfile, docker-compose (service + PostgreSQL), `smoke-test.sh` and a README.
+- 19 API integration tests (`AssetApiIntegrationTest` 8, `TicketApiIntegrationTest` 11) covering every route and verb in the spec.
+- Pipeline: added `functional-build-test` and `functional-docker` jobs (compose up, smoke test, Trivy fs + image), Semgrep JSON output, and pointed SonarQube Cloud at `functional-codebase/`.
+- Agent iterations: **1**. The first push built and passed. The sandbox can't reach Maven Central, so compilation and testing happened only in CI.
+- Result, pipeline run [43954567816](https://github.com/azmeerhussain/resource-allocation-helpdesk-hub/actions/runs/43954567816): `Tests run: 19, Failures: 0, Errors: 0`, docker compose smoke test `SMOKE TEST PASSED`, Semgrep ✅, SonarQube Cloud `ANALYSIS SUCCESSFUL`, Trivy ✅ (non-blocking). Log: `docs/pipeline-logs/pa2-run-43954567816-full.txt`.
+
+**Interpretation choices the agent made (the spec was ambiguous):**
+1. The student prompt says "8 endpoints"; the spec table has **7 routes** (14 route + verb operations). All 7 routes and every verb were implemented. No extra endpoint was invented.
+2. FR5 "search the asset catalog and ticket logs simultaneously" was implemented as the same filter set (status, category/asset, course, lab) on both GET listing endpoints. There is no combined search endpoint, because the spec's endpoint table doesn't define one.
+3. Asset categories: HARDWARE, LAPTOP, IOT_NODE (physical), SOFTWARE_LICENSE, CLOUD_VOUCHER. Each asset belongs to a course **or** a research lab plus a department program.
+4. Ticket approval (PUT with `status`) only sets physical assets to RESERVED. **Inventory changes only in `/allocate`** (FR4). `/allocate` runs in a single DB transaction, so all items succeed or none do.
+5. Vouchers deduct `voucherAmount` from `voucherBalance`, and the allocation is rejected (409) if the balance would go below zero. Licenses issue the asset's license key. Physical items issue an `HW-` assignment token with a due date (`maxCheckoutDays`, default 14).
+6. Overdue tracking is a scheduled job (every 15 min) that flags past-due physical check-outs as OVERDUE. Check-out duration is computed per allocation (`checkoutDurationHours`).
+7. Ticket transitions: PENDING→APPROVED/REJECTED, APPROVED→REJECTED, REJECTED→CLOSED, ALLOCATED→CLOSED. ALLOCATED is reachable only through `/allocate`. Only PENDING tickets can be edited or deleted.
+8. "Comprehensive logging metrics": every action is logged with SLF4J, ticket state changes are stored as `ticket_event` history, and `GET /tickets/{id}` returns metrics (items, quantities, voucher total, hours open, status changes).
+9. `POST /assets/{id}/return` takes an optional `allocationId`. Without one, the oldest outstanding check-out is returned.
+10. Requesters, courses, labs and IT directors are external, so they are free-text IDs backed by static mock data (`mock-data/academic-units.json`).
