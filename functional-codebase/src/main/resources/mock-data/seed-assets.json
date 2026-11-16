@@ -1,0 +1,7 @@
+[
+  { "name": "Dell Latitude 7440 Laptop", "category": "LAPTOP", "totalStock": 10, "departmentProgram": "MET-CS", "courseId": "CS763-F26", "maxCheckoutDays": 30 },
+  { "name": "Raspberry Pi 5 IoT Node", "category": "IOT_NODE", "totalStock": 25, "departmentProgram": "ENG-ECE", "labId": "LAB-IOT", "maxCheckoutDays": 60 },
+  { "name": "YubiKey 5 NFC", "category": "HARDWARE", "totalStock": 15, "departmentProgram": "MET-CS", "labId": "LAB-SEC", "maxCheckoutDays": 14 },
+  { "name": "JetBrains All Products Pack", "category": "SOFTWARE_LICENSE", "totalStock": 50, "departmentProgram": "MET-CS", "courseId": "CS673-F26", "licenseKey": "DEMO-JB-7K2Q-9XW4-PL3M" },
+  { "name": "AWS Academy Cloud Credits", "category": "CLOUD_VOUCHER", "totalStock": 1, "departmentProgram": "MET-CS", "courseId": "CS763-F26", "voucherBalance": 5000.00 }
+]

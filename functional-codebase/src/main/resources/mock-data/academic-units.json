@@ -1,0 +1,17 @@
+{
+  "departmentPrograms": [
+    { "id": "MET-CS", "name": "MET Computer Science" },
+    { "id": "ENG-ECE", "name": "Electrical & Computer Engineering" }
+  ],
+  "courses": [
+    { "id": "CS763-F26", "code": "CS763", "title": "Secure Software Development", "departmentProgram": "MET-CS", "instructor": "Course Instructor (mock)" },
+    { "id": "CS673-F26", "code": "CS673", "title": "Software Engineering", "departmentProgram": "MET-CS", "instructor": "Course Instructor (mock)" }
+  ],
+  "labs": [
+    { "id": "LAB-IOT", "name": "IoT Systems Lab", "departmentProgram": "ENG-ECE", "facultyAdvisor": "Lab Advisor (mock)" },
+    { "id": "LAB-SEC", "name": "Security Research Lab", "departmentProgram": "MET-CS", "facultyAdvisor": "Lab Advisor (mock)" }
+  ],
+  "itDirectors": [
+    { "id": "it-dir-01", "name": "IT Director (mock)" }
+  ]
+}
