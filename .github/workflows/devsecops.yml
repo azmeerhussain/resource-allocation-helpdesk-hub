@@ -263,6 +263,45 @@ jobs:
           mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
           -Dsonar.qualitygate.wait=false
 
+      - name: Export SonarQube Cloud findings for triage (non-blocking)
+        if: env.SONAR_TOKEN != ''
+        continue-on-error: true
+        run: |
+          mkdir -p reports
+          K=azmeerhussain_resource-allocation-helpdesk-hub
+          # wait for SonarQube Cloud to finish processing this analysis
+          for i in $(seq 1 30); do
+            STATUS=$(curl -fsS -u "$SONAR_TOKEN:" "https://sonarcloud.io/api/ce/component?component=$K" | python3 -c 'import sys,json;d=json.load(sys.stdin);print("busy" if d.get("queue") else "done")')
+            [ "$STATUS" = "done" ] && break; echo "waiting for SonarQube Cloud processing ($i)..."; sleep 10
+          done
+          curl -fsS -u "$SONAR_TOKEN:" "https://sonarcloud.io/api/issues/search?componentKeys=$K&branch=main&resolved=false&ps=500" -o reports/sonar-issues.json
+          curl -fsS -u "$SONAR_TOKEN:" "https://sonarcloud.io/api/hotspots/search?projectKey=$K&branch=main&ps=500" -o reports/sonar-hotspots.json
+          curl -fsS -u "$SONAR_TOKEN:" "https://sonarcloud.io/api/qualitygates/project_status?projectKey=$K&branch=main" -o reports/sonar-quality-gate.json
+          python3 - <<'EOF'
+          import json
+          i = json.load(open("reports/sonar-issues.json"))
+          h = json.load(open("reports/sonar-hotspots.json"))
+          g = json.load(open("reports/sonar-quality-gate.json"))
+          print("QUALITY GATE:", g["projectStatus"]["status"])
+          for c in g["projectStatus"].get("conditions", []):
+              print("  condition", c.get("metricKey"), c.get("status"), "actual=", c.get("actualValue"), "threshold=", c.get("errorThreshold"))
+          print(f"ISSUES: {i['total']}")
+          for x in i["issues"]:
+              comp = x["component"].split(":", 1)[1]
+              print(f"ISSUE | {x.get('type')} | {x.get('severity')} | {x['rule']} | {comp}:{x.get('line')} | {x['message']}")
+          print(f"HOTSPOTS: {h['paging']['total']}")
+          for x in h["hotspots"]:
+              comp = x["component"].split(":", 1)[1]
+              print(f"HOTSPOT | {x['securityCategory']} | {x['vulnerabilityProbability']} | {x['ruleKey']} | {comp}:{x.get('line')} | {x['message']}")
+          EOF
+
+      - name: Upload SonarQube findings
+        if: always() && env.SONAR_TOKEN != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonar-findings
+          path: reports/
+
       - name: Skip notice (no token configured)
         if: env.SONAR_TOKEN == ''
         run: echo "SONAR_TOKEN secret not set - SonarQube Cloud analysis skipped."
