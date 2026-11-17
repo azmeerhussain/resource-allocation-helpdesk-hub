@@ -144,7 +144,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Semgrep scan (non-blocking) - see scripts/sast-scan.sh
-        run: sh scripts/sast-scan.sh "${{ github.event.inputs.semgrep_target || '.' }}" reports
+        env:
+          # passed through an env var, not interpolated into the script (fixes Semgrep F09, CWE-78)
+          SEMGREP_TARGET: ${{ github.event.inputs.semgrep_target || '.' }}
+        run: sh scripts/sast-scan.sh "$SEMGREP_TARGET" reports
 
       - name: Upload Semgrep SARIF to Code Scanning
         if: always()
