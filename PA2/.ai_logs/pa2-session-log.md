@@ -172,3 +172,10 @@
 > Now give a fix for each threat and abuse case, link it to the SR and M it covers, and say whether PA3 already handles it. Put it all in a table.
 
 **Agent output:** Re-read the PA3 brief and the instructor's ReadMe update to ground "does PA3 handle it" (confirmed CWEs + exactly 3 STRIDE threats + 5 minimum requirements). Section 6: **19 mitigations (MIT-1…MIT-19)**, each with a Spring Boot-specific fix, the abuse cases and STRIDE threats it addresses, the SR and M/S it covers, and its PA3 status (✅ / 🟡 / ⚪). A coverage table confirms all 12 abuse cases have a fix. There are three open decisions for the student: which 3 STRIDE threats PA3 will cover; that the master spec does **not** define Domain 2's "primary resource" and "sensitive field" (assumed Ticket and licenseKey/issuedToken, to confirm with the instructor); and whether to add the 5.4 findings to the triage ledger.
+
+## PA2-15 · 2026-11-16 · Student write-ups and review
+**Student prompts (verbatim, abridged):** asked for a list of every remaining human task, then questioned whether all of it was really required ("are you sure these are all the deliverables and I need this much content for each thing? seems extensively in depth"). The agent re-checked the PA2 brief and **admitted it had mixed PA3 prep and optional items into the list**. It cut the list down to the required items (journal 2.1, 2.3, 3.1, 3.2, section 4 rows, release, submission).
+
+The student then sent journal sections 2.1, 2.3, 3.1 and 3.2 and two section 4 rows (**written by the student; inserted verbatim**).
+
+**Agent review feedback:** (1) The 3.2 claim that the "8 endpoints" came from the student's prompt is inaccurate. The number originated in the **agent's own earlier miscount** (PA2-01 guidance), which spread into the student's prompts. A rewrite was suggested for the student to accept or change. (2) Optionally name the prompting technique in 3.1. (3) Suggested filling the 1.2 share-link field with the manual-log alternative.
