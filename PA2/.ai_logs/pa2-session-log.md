@@ -119,3 +119,14 @@
 - **Future-proofing:** `scripts/sast-scan.sh` is one reusable Semgrep scan (JSON, SARIF, text, one-line summary) for CI, Codespaces and the PA3 peer-repo run (Semgrep only). The workflow has a `semgrep_target` input for manual runs. `.semgrepignore` skips logs and evidence. `codeql-action` upgraded from v3 to v4 (v3 is deprecated in Dec 2026).
 - **Broadened scan result (run 44004990430, first run with the new rulesets):** **21** raw Semgrep findings. 18 mutable action tags (CWE-1357), 1 `run-shell-injection` (CWE-78) at the new `semgrep_target` input, 1 `gha-curl-pipe-shell` (CWE-78) at the SonarQube export step, and the Dockerfile root user (CWE-269). There were still 0 findings in the Java source.
 - **AI-introduced flaw caught by the scanner:** the `run-shell-injection` finding came from code the agent had **just written** (it interpolated `${{ github.event.inputs.semgrep_target }}` straight into a `run:` script). The agent fixed it right away by passing the value through an environment variable. This is recorded as a true positive (fixed) in the triage ledger.
+
+## PA2-08 · 2026-11-16 · Triage decisions and sast-triage-report.md
+**Student prompts (verbatim):** the student's first set of TP/FP/confirm calls, then a revised set after agent feedback. The revised calls are reproduced **verbatim** in the "Student rationale" columns of `PA2/sast-triage-report.md`.
+
+**Agent feedback on the first set (before the student revised it):**
+1. S2 was marked FP, but the rationale described the code after the fix → suggested "TP, fixed".
+2. The SonarQube line implied there were issues to classify when there were 0 → suggested "N/A".
+3. Only M1, M7 and M8 were confirmed (the simplest flaws) → pointed out that the brief asks to hunt for complex logic and architectural flaws (Authorization, State Machine) and that omitting known real flaws makes the triage incomplete. The student then confirmed M2–M6 as well.
+4. After the revision: noted that M5's rationale ("nobody else can request them") overstates the impact, because `allocate()` checks stock, not status. The student's words were kept, and the precise effect is in the root-cause column.
+
+**Agent output:** `PA2/sast-triage-report.md` (scan config, raw summary, scanner ledger, 8 confirmed vulnerabilities with CWE, root cause and code locations, a Trivy appendix), plus the raw log `PA2/pipeline-logs/pa2-run-44004990430-sast-baseline.txt`.
