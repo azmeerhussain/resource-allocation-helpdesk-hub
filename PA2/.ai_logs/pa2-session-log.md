@@ -140,3 +140,9 @@
 **Prompting style (for journal 3.1):** multi-turn chaining, one section per prompt, constrained to the master spec, the generated code and the confirmed flaws M1–M8, with a required numbering and traceability format.
 
 **Agent output:** Section 1 of `PA2/security-analysis.md`: a role model derived from the spec (REQUESTER / IT_DIRECTOR / IT_ADMIN), **18 requirements SR-1…SR-18**, each with the flaw(s) it fixes and a verification test, and a traceability table showing every confirmed flaw (M1–M8, S1, S4) is covered. Four items are flagged as *not* tied to an M flaw: SR-9 (also covers a student review note outside M1–M8), SR-16 (S1 and Trivy), SR-17 and SR-18 (baseline).
+
+## PA2-10 · 2026-11-16 · security-analysis.md, part 2: abuse cases
+**Student prompt (verbatim):**
+> Now write the abuse cases. For each one, say who the attacker is, what they want and which endpoint they would use. Include the negative quantity one, approving your own ticket, stealing license keys and faking the approver's name.
+
+**Agent output:** Section 2 of `security-analysis.md`: 4 attacker profiles and **12 abuse cases (AC-1…AC-12)**, each with attacker, goal, endpoint(s), whether it works on the naive code today, the flaw and the preventing SRs, plus scenarios for the 4 the student required (AC-1 negative quantity, AC-2 self-approval, AC-3 key theft, AC-4 fake approver). AC-6 (race) is marked *likely, not yet exploited by hand*. Every other case is marked working, based on code reading, and only AC-1 was demonstrated by hand.

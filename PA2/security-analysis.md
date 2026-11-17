@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Conceptual AI contribution | **Part 1 (Security requirements): ~90% AI / ~10% human.** Later parts are added below as they are written. |
+| Conceptual AI contribution | **Part 1 (Security requirements): ~90% AI / ~10% human. Part 2 (Abuse cases): ~85% AI / ~15% human** (the student specified the 4 required abuse cases and the fields). Later parts are added below as they are written. |
 | Human (student) | Wrote the prompt for each part (multi-turn, part-by-part chaining). Supplied the confirmed flaw set M1–M8 (`sast-triage-report.md`), where the classifications and rationales are the student's. Audits each AI draft (see `.ai_logs/conceptual_journal.md` §3). |
 | AI (Claude, `claude-opus-5-5`) | Drafted the text of each part from the student's prompt, the master spec, the generated code and M1–M8. |
 | Prompts (verbatim) | [`.ai_logs/pa2-session-log.md`](.ai_logs/pa2-session-log.md), entries PA2-09 onward |
@@ -65,8 +65,43 @@
 
 ---
 
-## 2. Abuse Cases
-*(next part, pending the student's prompt)*
+## 2. Abuse Cases (thinking like a malicious user)
+
+**Prompt (PA2-10):** *"Now write the abuse cases. For each one, say who the attacker is, what they want and which endpoint they would use. Include the negative quantity one, approving your own ticket, stealing license keys and faking the approver's name."*
+
+**Attacker profiles**
+
+| Profile | Description | Access they start with |
+|---|---|---|
+| **A1: Malicious requester** | A student, instructor or faculty advisor who legitimately submits tickets but wants more than they're entitled to | Network access to the API (and, after PA3, a valid REQUESTER token) |
+| **A2: Curious or rival user** | Another course or lab member who wants someone else's resources or secrets | Same as A1, but targets objects they don't own |
+| **A3: External attacker** | No campus role; reaches the service over the network | Network access only (in the naive code, that's enough for everything) |
+| **A4: Insider covering tracks** | A user (or rogue IT staff member) who wants to hide or misattribute what they did | Same API access as above |
+
+**Summary.** "Works today" refers to the naive baseline in `PA2/functional-codebase/`.
+
+| ID | Abuse case | Attacker | What they want | Endpoint(s) | Works today? | Flaw | Prevented by |
+|---|---|---|---|---|---|---|---|
+| **AC-1** | **Inflate inventory with a negative quantity** | A1 | Fake extra stock (or voucher credit) so more allocations go through than really exist | `POST /api/v1/assets/tickets` → `PUT /tickets/{id}` → `POST /tickets/{id}/allocate` | ✅ **Yes, proven by hand** (laptops 10 → 15, `PA2/evidence/`) | M1 | SR-6, SR-7 |
+| **AC-2** | **Approve your own ticket** | A1 | Skip the IT director sign-off and get hardware or credits without review | `PUT /api/v1/assets/tickets/{id}` with `{"status":"APPROVED"}`, then `POST /tickets/{id}/allocate` | ✅ Yes, no authentication or role check | M2 | SR-1, SR-2, SR-4 |
+| **AC-3** | **Steal license keys and voucher codes** | A2, A3 | Harvest paid software keys and cloud credit codes to use or resell | `GET /api/v1/assets/allocations` (returns every issued key in `assignedSoftwareKeys`), `GET /api/v1/assets` and `GET /assets/{id}` (`licenseKey` field), `GET /tickets/{id}` (`issuedToken`); also the application logs | ✅ Yes, keys appear in responses and logs | M4 (+ M2) | SR-10, SR-11, SR-3 |
+| **AC-4** | **Fake the approver's name** | A1, A4 | Make a self-approval look like the IT director signed off, so the audit history blames or credits someone else | `PUT /api/v1/assets/tickets/{id}` with `"reviewedBy":"IT Director"`; `POST /tickets/{id}/allocate` with `"allocatedBy":"…"` | ✅ Yes, names are stored exactly as typed | M6 | SR-5, SR-1 |
+| **AC-5** | **Drain the cloud-credit voucher pool** | A1 | Allocate a very large `voucherAmount` to their own course, exhausting the department's credits | `POST /tickets` (huge `voucherAmount`) → self-approve (AC-2) → `POST /tickets/{id}/allocate` | ✅ Yes, no upper limit and self-approval works | M1, M2 | SR-6, SR-2, SR-4, SR-18 |
+| **AC-6** | **Over-allocate the last units with a race** | A1 (two accounts or two tabs) | Get more units than exist by allocating two approved tickets at the same moment | Two parallel `POST /api/v1/assets/tickets/{id}/allocate` calls | ⚠️ Likely (no row lock; READ COMMITTED lost update). Not yet exploited by hand. | M3 | SR-8, SR-7 |
+| **AC-7** | **Return someone else's device** | A2 | Mark another team's checked-out laptop as returned, putting the unit back in the pool and clearing its overdue flag, so it can be allocated again while it's still physically out | `POST /api/v1/assets/{asset_id}/return` with `{"allocationId": "<victim allocation>"}` (IDs come from `GET /allocations`) | ✅ Yes, no ownership check on return | M2 (BOLA) | SR-3, SR-2 |
+| **AC-8** | **Lock up assets by abusing the workflow** | A2 | Make an asset look unavailable by approving and then rejecting a ticket for it, so it stays `RESERVED` and drops out of the "available" catalog | `PUT /tickets/{id}` APPROVED → `PUT /tickets/{id}` REJECTED | ✅ Yes, the reservation is never released | M5 (+ M2) | SR-12, SR-2 |
+| **AC-9** | **Rewrite inventory directly** | A1, A3 | Set `availableStock` or `status` to any value (e.g. 9999, or mark a busy asset AVAILABLE), or delete an asset that still has active allocations | `PUT /api/v1/assets/{asset_id}`, `DELETE /api/v1/assets/{asset_id}` | ✅ Yes, no field restrictions or delete checks | M2 (+ student review note) | SR-9, SR-2, SR-7 |
+| **AC-10** | **Map stock and balances from error messages** | A3 | Learn exact inventory and voucher balances (to time attacks like AC-5 and AC-6) without asset access, by sending oversized requests and reading the `409` text | `POST /tickets/{id}/allocate` (the error contains "available N, requested M" / "balance X") | ✅ Yes, the error body includes the figures | M7 | SR-13 |
+| **AC-11** | **Go straight to the database** | A3 (on the host's network) | Read all tables, including plaintext license keys, or change inventory, without going through the API | PostgreSQL on host port **5432** with the hardcoded `helpdesk` / `helpdesk` credentials | ✅ Yes, the port is published and the password is in the repo | M8 | SR-14 |
+| **AC-12** | **Erase traces of a failed attempt** | A4 | Remove evidence of a suspicious request by deleting the PENDING ticket, which also deletes its event history | `DELETE /api/v1/assets/tickets/{id}` | ✅ Yes (PENDING tickets only), the events are deleted too | M6 | SR-5 |
+
+**Abuse case scenarios (the four the student required)**
+
+- **AC-1: Negative quantity.** A requester submits a ticket asking for `quantity: -5` laptops. Because the naive code allows anyone to approve (AC-2), they approve it themselves, then call `/allocate`. The allocation check `available < quantity` passes (10 < −5 is false), and the update computes `10 − (−5) = 15`. Inventory now claims 15 laptops out of 10, and later legitimate allocations draw on stock that doesn't exist. The same trick with `voucherAmount: -1000` adds $1,000 of cloud credit.
+- **AC-2: Approve your own ticket.** The spec requires IT director sign-off (FR4), but approval is just `PUT /tickets/{id}` with `"status":"APPROVED"`, and the API never checks who sent it. The requester submits, approves and allocates in three calls, and the separation of approval from allocation is defeated.
+- **AC-3: Steal license keys.** Anyone calls `GET /api/v1/assets/allocations` with no filters and receives every active allocation, including `assignedSoftwareKeys`. `GET /api/v1/assets` returns the master `licenseKey` of every license pool. Anyone with log access sees the keys printed by `AssetService` and `TicketService`. Because every seat gets the same master key, one leak exposes the whole pool.
+- **AC-4: Fake the approver.** The attacker self-approves (AC-2) with `"reviewedBy":"IT Director"`. The ticket, its `ticket_event` history and `GET /tickets/{id}` all show the IT director as approver, so an audit would blame the wrong person and the abuse is hidden.
+
 
 ## 3. Attack Trees (≥ 3 abuse cases)
 *(pending)*
