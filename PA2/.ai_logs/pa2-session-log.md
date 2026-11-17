@@ -154,3 +154,9 @@
 > based off context, are these good choices?
 
 **Agent output:** Confirmed the choice: the three trees span different layers (data exposure, authorization, input/concurrency) and the highest-impact confirmed flaws. Interpreted "overspending stock" as one goal with branches for AC-1, AC-5, AC-6, AC-7 and AC-9. Wrote three Mermaid attack trees with AND/OR gates and feasibility markers (✅ / ⚠️ / ❌ / ➖), each with its cheapest path and the SRs that cut it. All three were validated by rendering with `mmdc` before committing. Tree 2 includes a branch the naive code already blocks (editing an APPROVED ticket) and a post-PA3 branch (forged or stolen JWT), marked as not applicable yet.
+
+## PA2-12 · 2026-11-16 · security-analysis.md, part 4: attack surface map
+**Student prompt (verbatim):**
+> Map out the attack surface. List all 8 endpoints and who should be able to use them, plus the database port, the logs, the Docker container and the CI pipeline.
+
+**Agent output:** Corrected the endpoint count (the spec has 7 routes and 14 operations; the 8th network entry point is the exposed Actuator). Section 4: 8 HTTP entry points (input, intended roles, actual access today, sensitive data, flaws, SRs), 6 non-HTTP surfaces (PostgreSQL port, logs, container/image, CI pipeline, public repo, scheduler) and 5 trust boundaries. Exposed ports, Actuator exposure and CI secrets/permissions were checked against the actual files before writing.

@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Conceptual AI contribution | **Part 1 (Security requirements): ~90% AI / ~10% human. Part 2 (Abuse cases): ~85% AI / ~15% human** (the student specified the 4 required abuse cases and the fields). **Part 3 (Attack trees): ~85% AI / ~15% human** (the student chose the 3 abuse cases and the format). Later parts are added below as they are written. |
+| Conceptual AI contribution | **Part 1 (Security requirements): ~90% AI / ~10% human. Part 2 (Abuse cases): ~85% AI / ~15% human** (the student specified the 4 required abuse cases and the fields). **Part 3 (Attack trees): ~85% AI / ~15% human** (the student chose the 3 abuse cases and the format). **Part 4 (Attack surface): ~90% AI / ~10% human** (the student defined the scope). Later parts are added below as they are written. |
 | Human (student) | Wrote the prompt for each part (multi-turn, part-by-part chaining). Supplied the confirmed flaw set M1–M8 (`sast-triage-report.md`), where the classifications and rationales are the student's. Audits each AI draft (see `.ai_logs/conceptual_journal.md` §3). |
 | AI (Claude, `claude-opus-5-5`) | Drafted the text of each part from the student's prompt, the master spec, the generated code and M1–M8. |
 | Prompts (verbatim) | [`.ai_logs/pa2-session-log.md`](.ai_logs/pa2-session-log.md), entries PA2-09 onward |
@@ -212,7 +212,48 @@ flowchart TD
 
 
 ## 4. Attack Surface Map
-*(pending)*
+
+**Prompt (PA2-12):** *"Map out the attack surface. List all 8 endpoints and who should be able to use them, plus the database port, the logs, the Docker container and the CI pipeline."*
+
+> **Note on "8 endpoints":** the master spec defines **7 routes** (14 method + route operations). The 8th network entry point is the Spring Boot Actuator (`/actuator/health`, `/actuator/info`), which the generated code exposes. All 8 are listed below.
+
+### 4.1 Network entry points (HTTP, port 8080)
+
+"Should use" = the intended access from SR-2/SR-3. "Can use today" = the naive baseline.
+
+| # | Route | Methods | Input accepted | Should use | Can use today | Sensitive data / effect | Flaws | Controls |
+|---|---|---|---|---|---|---|---|---|
+| E1 | `/api/v1/assets` | POST | JSON `AssetRequest` (name, category, stock, status, licenseKey, voucherBalance…) | `IT_ADMIN` | **Anyone** | Creates inventory and stores secret keys | M2, M4 (key logged) | SR-1, SR-2, SR-10, SR-11 |
+| | | GET | Query: `status`, `category`, `departmentProgram`, `courseId`, `labId`, `q` | All authenticated roles (keys hidden) | **Anyone** | Returns `licenseKey` and `voucherBalance` of every asset | M2, M4 | SR-1, SR-10 |
+| E2 | `/api/v1/assets/{asset_id}` | GET / PUT / DELETE | Path UUID; PUT body `AssetRequest` | GET: all roles · PUT/DELETE: `IT_ADMIN` | **Anyone** | PUT can set `availableStock` and `status` directly; DELETE ignores active allocations | M2, M4, review note | SR-2, SR-9, SR-10 |
+| E3 | `/api/v1/assets/{asset_id}/return` | POST | Path UUID; optional `allocationId` | `IT_ADMIN` (or the owning requester, if policy allows) | **Anyone, for any allocation** | Puts units back in stock and clears overdue status | M2 (BOLA, AC-7) | SR-2, SR-3 |
+| E4 | `/api/v1/assets/allocations` | GET | Query: `courseId`, `labId` (both optional) | `REQUESTER` (own course/lab only), `IT_DIRECTOR`, `IT_ADMIN` | **Anyone, all courses/labs** | Returns `assignedSoftwareKeys` and every `issuedToken` | M2, M4 (AC-3) | SR-1, SR-3, SR-10 |
+| E5 | `/api/v1/assets/tickets` | POST / GET | POST body `TicketRequest` (items, quantities, voucher amounts, requester/role text); GET filters | POST: `REQUESTER` · GET: own tickets (requester) or all (director/admin) | **Anyone, all tickets** | Creates requests with unbounded quantities; lists every ticket | M1, M2, M6 | SR-1, SR-3, SR-5, SR-6, SR-18 |
+| E6 | `/api/v1/assets/tickets/{ticket_id}` | GET / PUT / DELETE | Path UUID; PUT body with `status`, `reviewedBy`, items | GET: owner, director, admin · PUT content/DELETE: owner (PENDING only) · PUT status: `IT_DIRECTOR` | **Anyone, including self-approval** | GET returns allocations with `issuedToken`; PUT approves or rejects; DELETE wipes event history | M2, M4, M5, M6, M7 | SR-2, SR-4, SR-5, SR-10, SR-12, SR-13 |
+| E7 | `/api/v1/assets/tickets/{ticket_id}/allocate` | POST | Path UUID; optional `allocatedBy` | `IT_ADMIN` only, APPROVED tickets only | **Anyone** | Deducts inventory and issues keys and tokens; race-prone; errors leak stock/balance | M1, M2, M3, M6, M7 | SR-2, SR-4, SR-6, SR-7, SR-8, SR-13 |
+| E8 | `/actuator/health`, `/actuator/info` | GET | None | Orchestrator / monitoring (health may stay public; `info` should not) | **Anyone** | Low: status only (other actuator endpoints are not exposed) | n/a | Keep exposure limited to `health`; SR-17 |
+
+### 4.2 Non-HTTP attack surface
+
+| # | Surface | Exposure today | Who should have access | Risk | Flaws | Controls |
+|---|---|---|---|---|---|---|
+| D1 | **PostgreSQL** (container `db`, port **5432**) | Published on the **host** (`"5432:5432"`); credentials `helpdesk` / `helpdesk` in `docker-compose.yml` (public repo) | Only the `app` container over the internal Docker network | Full read/write of every table, including plaintext `license_key` / `issued_token` (AC-11) | M8, M4 | SR-14 (no host port, secret-managed creds), SR-10 (encryption at rest), SR-7 |
+| D2 | **Application logs** (stdout → `docker compose logs`, CI log artifacts) | License keys logged on create, seed and allocation; free-text actor names logged as fact; CI uploads container logs as artifacts | Operators / IT admins only | Key disclosure to anyone with log or CI-artifact access; misleading audit records | M4, M6 | SR-11 (no secrets in logs, security event logging), SR-5 |
+| D3 | **Docker container and image** (`app`, port 8080) | Runs as **root**; Spring Boot 3.3.5 with 89 known library CVEs (incl. Tomcat CVE-2025-24813 CRITICAL); config through environment variables | Deployment pipeline only | A web-layer exploit gets root in the container; reading env vars exposes DB credentials | S4, M8, Trivy appendix | SR-15, SR-16, SR-14 |
+| D4 | **CI pipeline** (GitHub Actions `devsecops.yml`) | Triggered by push, PR and manual dispatch (`semgrep_target` input); actions pinned by **mutable tags**; holds `SONAR_TOKEN`; `security-events: write`; uploads logs and reports as artifacts | Repo maintainers (write access) | Supply-chain compromise of a tagged action could exfiltrate `SONAR_TOKEN` or alter build output; an input injection risk existed (S2, fixed) | S1, S2 (fixed) | SR-16 (SHA pinning, least-privilege `permissions`), keep inputs out of `run:` interpolation |
+| D5 | **Source repository** (public GitHub) | Contains compose credentials and fake demo keys; the full code is public | Anyone can read; maintainers write | Attackers learn credentials and logic paths (the basis for D1 and AC-11) | M8 | SR-14, secret scanning (Semgrep `p/secrets`) |
+| D6 | **Scheduled overdue job** (internal, every 15 min) | No network entry; acts on DB state | System only | Low; relies on data integrity (manipulated by E3/E2) | n/a | SR-7, SR-3 |
+
+### 4.3 Trust boundaries
+
+1. **Internet / campus network → API (port 8080):** today **no** authentication; everything in 4.1 is reachable without credentials. This is the main boundary to harden (SR-1…SR-4).
+2. **API → PostgreSQL:** should be internal-only, but is **also reachable from the host** (D1).
+3. **Container → host:** the process runs as root (D3).
+4. **GitHub (third-party actions, SonarQube Cloud) → CI runner:** trust is placed in mutable action tags and an external token (D4).
+5. **Mock data / external directory → service:** course, lab and requester IDs are free text that is never verified (the `academic-units.json` stand-in), so requester identity and role are unverified (M6).
+
+**Largest exposure today:** E4 and E7 (anyone can harvest keys or run allocations), and D1 (direct database access with credentials published in the repo).
+
 
 ## 5. Data Flow Diagram & STRIDE (every component)
 *(pending)*
