@@ -130,3 +130,13 @@
 4. After the revision: noted that M5's rationale ("nobody else can request them") overstates the impact, because `allocate()` checks stock, not status. The student's words were kept, and the precise effect is in the root-cause column.
 
 **Agent output:** `PA2/sast-triage-report.md` (scan config, raw summary, scanner ledger, 8 confirmed vulnerabilities with CWE, root cause and code locations, a Trivy appendix), plus the raw log `PA2/pipeline-logs/pa2-run-44004990430-sast-baseline.txt`.
+
+## PA2-09 · 2026-11-16 · security-analysis.md, part 1: security requirements
+**Student prompt (verbatim):**
+> lets leave all write ups for the end, lets go next step. i want to do it part by part. sending you the first prompt now
+>
+> Can you write the security requirements for the Domain 2 service? Use the spec, the code and the M1–M8 flaws we found. Number them SR-1, SR-2, etc., and say which M flaw each one fixes.
+
+**Prompting style (for journal 3.1):** multi-turn chaining, one section per prompt, constrained to the master spec, the generated code and the confirmed flaws M1–M8, with a required numbering and traceability format.
+
+**Agent output:** Section 1 of `PA2/security-analysis.md`: a role model derived from the spec (REQUESTER / IT_DIRECTOR / IT_ADMIN), **18 requirements SR-1…SR-18**, each with the flaw(s) it fixes and a verification test, and a traceability table showing every confirmed flaw (M1–M8, S1, S4) is covered. Four items are flagged as *not* tied to an M flaw: SR-9 (also covers a student review note outside M1–M8), SR-16 (S1 and Trivy), SR-17 and SR-18 (baseline).
