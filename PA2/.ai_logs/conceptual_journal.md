@@ -83,5 +83,6 @@ Overall the AI built what I asked for. The endpoints work, the tests pass and Do
 | Timestamp | Component Target | Testing/Auditing Methodology | Verified Outcome / Discovered Defect |
 |---|---|---|---|
 | 2026-11-16 | `PA2/functional-codebase/` (TicketService, AssetService, AllocationService, controllers, schema, Docker config) | Manual code review of the AI-generated source, guided by the agent's file/line list (PA2-02) | Found missing concurrency control on allocation, a shared license key that is also logged, no authorization, unconstrained asset updates, and more (see 2.2, Entry 1) |
+| 2026-11-16 | `POST /api/v1/assets/tickets/{id}/allocate` (run by hand with curl in GitHub Codespaces; screenshots in `PA2/evidence/`) | Negative quantity test | Negative quantity test - I requested -5 laptops and the system accepted it. Instead of going down, the number of available laptops went up from 10 to 15, even though there are only 10 in total. Anyone could use this to make the system think there’s more stock than there really is. |
 | ✍️ | | | |
 
