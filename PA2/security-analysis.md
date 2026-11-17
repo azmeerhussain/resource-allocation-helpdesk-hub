@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Conceptual AI contribution | **Part 1 (Security requirements): ~90% AI / ~10% human. Part 2 (Abuse cases): ~85% AI / ~15% human** (the student specified the 4 required abuse cases and the fields). **Part 3 (Attack trees): ~85% AI / ~15% human** (the student chose the 3 abuse cases and the format). **Part 4 (Attack surface): ~90% AI / ~10% human** (the student defined the scope). Later parts are added below as they are written. |
+| Conceptual AI contribution | **Part 1 (Security requirements): ~90% AI / ~10% human. Part 2 (Abuse cases): ~85% AI / ~15% human** (the student specified the 4 required abuse cases and the fields). **Part 3 (Attack trees): ~85% AI / ~15% human** (the student chose the 3 abuse cases and the format). **Part 4 (Attack surface): ~90% AI / ~10% human** (the student defined the scope). **Part 5 (DFD & STRIDE): ~90% AI / ~10% human** (the student defined the method and required real code examples). Later parts are added below as they are written. |
 | Human (student) | Wrote the prompt for each part (multi-turn, part-by-part chaining). Supplied the confirmed flaw set M1–M8 (`sast-triage-report.md`), where the classifications and rationales are the student's. Audits each AI draft (see `.ai_logs/conceptual_journal.md` §3). |
 | AI (Claude, `claude-opus-5-5`) | Drafted the text of each part from the student's prompt, the master spec, the generated code and M1–M8. |
 | Prompts (verbatim) | [`.ai_logs/pa2-session-log.md`](.ai_logs/pa2-session-log.md), entries PA2-09 onward |
@@ -256,7 +256,167 @@ flowchart TD
 
 
 ## 5. Data Flow Diagram & STRIDE (every component)
-*(pending)*
+
+**Prompt (PA2-13):** *"Draw a data flow diagram in Mermaid that shows the trust boundaries. Then do STRIDE for every component, using real examples from our code."*
+
+### 5.1 Data flow diagram (Level 1)
+
+Processes `P1–P6`, data stores `DS1–DS4`, external entities (rounded nodes), trust boundaries `TB0–TB4` (subgraphs). Dotted line = an unintended path that exists today.
+
+```mermaid
+%%{init: {'theme':'neutral'}}%%
+flowchart LR
+    subgraph TB0["TB0: Untrusted: campus network / Internet"]
+        REQ(["Requester<br/>(instructor / faculty advisor)"])
+        DIR(["IT Director"])
+        ADM(["IT Admin"])
+        ATK(["Anonymous / attacker"])
+    end
+
+    subgraph TB1["TB1: Docker host"]
+        subgraph TB2["TB2: app container (runs as root)"]
+            WEB["P1 Web layer<br/>AssetController / TicketController<br/>ApiExceptionHandler, port 8080"]
+            TKS["P2 TicketService<br/>submit, approve/reject, allocate"]
+            ASS["P3 AssetService<br/>catalog CRUD, return"]
+            ALS["P4 AllocationService<br/>allocation summary + overdue job"]
+            MDL["P5 MockDataLoader<br/>seeds catalog at startup"]
+            MOCK[("DS3 mock-data/*.json")]
+        end
+        subgraph TB3["TB3: db container"]
+            DB[("DS1 PostgreSQL<br/>asset, ticket, ticket_item,<br/>ticket_event, allocation")]
+        end
+        LOGS[("DS2 Container logs<br/>stdout / docker logs")]
+        HOSTPORT{{"Host port 5432 (published)"}}
+    end
+
+    subgraph TB4["TB4: GitHub (third party)"]
+        CI["P6 CI pipeline<br/>GitHub Actions + SONAR_TOKEN"]
+        SONAR["SonarQube Cloud"]
+        ART[("DS4 CI artifacts<br/>compose logs, scan reports")]
+    end
+
+    REQ -- "HTTP JSON: tickets, items, quantities<br/>(no auth)" --> WEB
+    DIR -- "HTTP JSON: status=APPROVED, reviewedBy" --> WEB
+    ADM -- "HTTP JSON: assets, allocate, return" --> WEB
+    ATK -- "any request (no auth)" --> WEB
+    WEB -- "JSON incl. licenseKey / issuedToken,<br/>error messages with stock and balance" --> REQ
+    WEB -- "responses" --> ATK
+    WEB --> TKS
+    WEB --> ASS
+    WEB --> ALS
+    TKS -- "JPA read-check-write (no lock)" --> DB
+    ASS -- "JPA CRUD" --> DB
+    ALS -- "JPA reads / overdue updates" --> DB
+    MOCK --> MDL --> ASS
+    TKS -- "keys, tokens, actor names" --> LOGS
+    ASS -- "licenseKey on create" --> LOGS
+    ATK -. "helpdesk / helpdesk" .-> HOSTPORT -.-> DB
+    CI -- "build, run, scan; uploads container logs" --> ART
+    CI -- "analysis + token" --> SONAR
+```
+
+| Boundary | Separates | Crossing flows |
+|---|---|---|
+| **TB0 → TB2** | Untrusted users ↔ application | All HTTP requests and responses on port 8080 (**no authentication, no TLS**) |
+| **TB2 ↔ TB3** | Application ↔ database | JDBC over the internal Docker network |
+| **TB0 → TB3 (via host)** | Untrusted network ↔ database | **Published port 5432** with credentials from the repo (unintended) |
+| **TB2 → TB1** | Container ↔ host | Root process; stdout logs collected on the host |
+| **TB4 ↔ repo** | Third-party CI/SaaS ↔ project | Mutable-tag actions, `SONAR_TOKEN`, uploaded log artifacts |
+
+### 5.2 STRIDE matrix
+
+● = applicable threat with a real example in our code (see 5.3) · ○ = low / not meaningful for this component
+
+| Component | S | T | R | I | D | E |
+|---|---|---|---|---|---|---|
+| External entities (requester, director, admin) | ● | ○ | ● | ○ | ○ | ○ |
+| P1 Web layer (controllers, exception handler) | ● | ● | ● | ● | ● | ● |
+| P2 TicketService | ● | ● | ● | ● | ● | ● |
+| P3 AssetService | ○ | ● | ● | ● | ● | ● |
+| P4 AllocationService + overdue job | ○ | ● | ○ | ● | ● | ○ |
+| P5 MockDataLoader + DS3 mock data | ○ | ● | ○ | ● | ○ | ○ |
+| DS1 PostgreSQL | ● | ● | ● | ● | ● | ● |
+| DS2 Container logs | ○ | ● | ● | ● | ● | ○ |
+| Data flow: client ↔ API (HTTP) | ● | ● | ○ | ● | ○ | ○ |
+| TB2 app container / image | ○ | ● | ○ | ● | ○ | ● |
+| P6 CI pipeline + DS4 artifacts | ● | ● | ○ | ● | ○ | ● |
+
+### 5.3 STRIDE per component, with examples from the code
+
+Line numbers refer to `PA2/functional-codebase/src/main/java/edu/bu/cs763/helpdesk/` unless another file is named.
+
+**External entities**
+- **S:** Anyone can claim to be an instructor or the IT director: `requesterName`/`requesterRole` in `TicketRequest` and `reviewedBy` are just strings. *(M6, AC-4)*
+- **R:** A requester can deny submitting or self-approving a ticket, because nothing ties a request to an authenticated identity. *(M2, M6)*
+
+**P1 Web layer: `AssetController`, `TicketController`, `ApiExceptionHandler`**
+- **S:** No authentication on any route. Every caller is anonymous and indistinguishable. *(M2)*
+- **T:** Mass assignment. `PUT /assets/{id}` binds `AssetRequest`, so a caller can set `availableStock`, `status` and `licenseKey` directly (`AssetService.apply()`). *(AC-9)*
+- **R:** Requests are not logged with an identity. The only record is the service-level log with caller-supplied names.
+- **I:** Entities are serialised directly, so `Asset.licenseKey` and `Allocation.issuedToken` leak in GET responses. `ApiExceptionHandler.java:43` returns raw exception messages with stock and balance figures. *(M4, M7, AC-10)*
+- **D:** List endpoints have no paging: `AssetService.search()` (`service/AssetService.java:100`) and `TicketService.search()` (`:124`) return every row. Ticket item lists are unbounded.
+- **E:** Any caller performs `IT_ADMIN` and `IT_DIRECTOR` actions (create assets, approve, allocate). *(M2, AC-2)*
+
+**P2 `TicketService` (submit / review / allocate)**
+- **S:** `ticket.setReviewedBy(request.reviewedBy())` (`TicketService.java:200`) and `setAllocatedBy(allocatedBy)` (`:301`) store any name the caller sends. *(M6)*
+- **T:** Negative quantity or voucher amount inflates inventory: `available < quantity` / `available - quantity` (`:277–281`), `remaining.signum()` (`:268–272`). Proven 10 → 15. Approval sets `RESERVED` (`:213`), and rejection never clears it. *(M1, M5, AC-1, AC-8)*
+- **R:** History rows (`ticket_event`) record the caller-supplied actor, and deleting a PENDING ticket deletes its history (`eventRepository.deleteByTicketId`, `:230`). *(M6, AC-12)*
+- **I:** Issued license tokens are logged (`log.info("Allocated … token={}")`, `:295`). `ConflictException` messages include asset IDs, available stock and voucher balance. *(M4, M7)*
+- **D:** The read-check-write in `allocate()` with no lock lets concurrent requests corrupt stock (lost update), and a huge item list makes one transaction lock many rows. *(M3, AC-6)*
+- **E:** `transition()` (`:192`) lets anyone move PENDING → APPROVED, and `allocate()` has no role check, so the separation of duties in FR4 is gone. *(M2, AC-2)*
+
+**P3 `AssetService` (catalog, return)**
+- **T:** `apply()` copies any non-null field onto the entity. `returnAsset()` accepts any `allocationId` with no ownership check, so another team's device can be "returned" while still checked out. `delete()` removes assets that have active allocations. *(AC-7, AC-9)*
+- **R:** `log.info("Asset updated id={}")` (`:113`) records no actor and no before/after values.
+- **I:** `log.info("Asset created … licenseKey={}")` (`:70`) writes the master key to the logs. *(M4)*
+- **D:** Deleting an in-use asset leaves allocations pointing at a missing asset, which breaks returns for that device.
+- **E:** Inherited from P1: anonymous callers perform admin-only catalog changes.
+
+**P4 `AllocationService` (summary + overdue job)**
+- **T:** The overdue job (`markOverdue()`) trusts `dueAt` and stock data that P2/P3 let attackers distort.
+- **I:** `activeFor()` builds `assignedSoftwareKeys` (`AllocationService.java:67`) and returns every key to any caller when no filter is given. *(M4, AC-3)*
+- **D:** `findByStatusIn(...)` (`:52`) loads **all** active allocations into memory and filters in Java on every request.
+
+**P5 `MockDataLoader` + DS3 mock data**
+- **T:** Seed data is baked into the image (`mock-data/seed-assets.json`), so whoever controls the image controls the initial inventory.
+- **I:** Seeding goes through `AssetService.create()`, which logs every seeded license key at startup (student review note). *(M4)*
+
+**DS1 PostgreSQL**
+- **S:** Anyone who can reach host port 5432 can log in as `helpdesk` / `helpdesk` (`docker-compose.yml:19, 21`). *(M8, AC-11)*
+- **T:** `schema.sql` has no `CHECK` constraints, no `NOT NULL` on required columns and no FK from `allocation` to `asset`, so negative stock is stored without complaint. *(M1, SR-7)*
+- **R:** No database audit trail; direct SQL changes are invisible to the application.
+- **I:** `license_key` and `issued_token` are stored in **plaintext**. *(M4)*
+- **D:** The published port is open to connection exhaustion and password guessing.
+- **E:** The `postgres` image makes `POSTGRES_USER` (`helpdesk`) a **superuser**, so the app account and any attacker using it have full database privileges.
+
+**DS2 Container logs**
+- **T:** **Log injection (CWE-117):** user-controlled strings (`requesterName`, `courseId`, …) are logged raw (`TicketService.java:96`), so a value containing a newline can forge extra log lines. *(Found during this analysis; not in M1–M8.)*
+- **R:** Logs present caller-typed names as fact (`by=IT Director`). *(M6)*
+- **I:** License keys and tokens are in the logs (P2, P3, P5). *(M4)*
+- **D:** No rate limiting, so request floods also flood the logs and disk.
+
+**Data flow: client ↔ API**
+- **S / T / I:** Plain HTTP on port 8080 with no TLS. Tokens and keys in responses can be sniffed or altered in transit on a shared network. *(SR-17)*
+
+**TB2 app container / image**
+- **T:** Base images are referenced by mutable tags (`maven:3.9.9-eclipse-temurin-21`, `eclipse-temurin:21-jre-alpine`), so a re-pushed tag changes what gets built.
+- **I:** The DB password sits in plain container environment variables (`docker inspect`).
+- **E:** No `USER` instruction, so the JVM runs as **root** (Semgrep S4). Combined with library CVEs such as Tomcat CVE-2025-24813 (Trivy appendix), a web exploit gets root in the container.
+
+**P6 CI pipeline + DS4 artifacts**
+- **S:** Actions pinned by mutable tags (`@v4`) can be silently swapped for malicious code that impersonates the real action. *(S1)*
+- **T:** Workflow-dispatch input was interpolated into a shell script (S2, now fixed by passing it through an env var).
+- **I:** `SONAR_TOKEN` is available to third-party actions in that job. The smoke test (`smoke-test.sh:38–40`) prints allocation responses, and the job uploads container logs as artifacts, so issued tokens and seeded keys end up in CI logs and artifacts. *(M4)*
+- **E:** Workflow `permissions` include `security-events: write`. A compromised action inherits the job's token scope.
+
+### 5.4 New issues found during STRIDE (not in M1–M8)
+These came out of this analysis and should be **reviewed by the student** before deciding whether to add them to the triage ledger (adding them would extend the PA3 scope):
+1. **Log injection (CWE-117)**: raw user strings in log statements (`TicketService.java:96` and others).
+2. **Database superuser (CWE-250)**: the app connects as the PostgreSQL superuser created by `POSTGRES_USER`.
+3. **No paging / in-memory filtering (CWE-770)**: unbounded list endpoints and `findByStatusIn` loading all allocations.
+4. **No TLS (CWE-319)**: plain HTTP for responses that contain license keys.
+5. **Keys and tokens in CI logs and artifacts (CWE-532)**: the smoke test and log artifacts.
+
 
 ## 6. Proposed Mitigations
 *(pending)*

@@ -160,3 +160,9 @@
 > Map out the attack surface. List all 8 endpoints and who should be able to use them, plus the database port, the logs, the Docker container and the CI pipeline.
 
 **Agent output:** Corrected the endpoint count (the spec has 7 routes and 14 operations; the 8th network entry point is the exposed Actuator). Section 4: 8 HTTP entry points (input, intended roles, actual access today, sensitive data, flaws, SRs), 6 non-HTTP surfaces (PostgreSQL port, logs, container/image, CI pipeline, public repo, scheduler) and 5 trust boundaries. Exposed ports, Actuator exposure and CI secrets/permissions were checked against the actual files before writing.
+
+## PA2-13 · 2026-11-16 · security-analysis.md, part 5: DFD & STRIDE
+**Student prompt (verbatim):**
+> Draw a data flow diagram in Mermaid that shows the trust boundaries. Then do STRIDE for every component, using real examples from our code.
+
+**Agent output:** A Level-1 Mermaid DFD (6 processes, 4 data stores, external entities, trust boundaries TB0–TB4, and the unintended path to the published DB port), validated with `mmdc`. The first draft wrongly showed CI writing to the host's container logs; the agent caught this and changed it to a separate CI-artifacts store before committing. Also a boundary table, a STRIDE matrix for **11 components**, and per-component threats tied to file and line references, which were checked with `grep` before writing. **5 new issues** came up that are not in M1–M8 (log injection CWE-117, DB superuser, unbounded lists CWE-770, no TLS CWE-319, keys in CI logs/artifacts). They are flagged for the student to decide on, not added to the triage ledger.
