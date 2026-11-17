@@ -101,3 +101,19 @@
 **Agent output:** PowerShell commands for a local Docker test. The student's PC could not run Docker (virtualization disabled in firmware), so the agent provided an equivalent bash/curl script for **GitHub Codespaces** and explained the Codespaces free quota when the student asked. The student created the codespace himself and moved this chat to his MacBook because his PC kept crashing.
 
 **Result (run by the student):** On a fresh database, a ticket with `quantity: -5`, approved by `"Anyone"` and allocated, raised laptop stock from 10 to **15** (total 10). Screenshots are in `PA2/evidence/`. This confirms a missing lower-bound check on quantity in `TicketService.allocate()` and that approval needs no authenticated identity.
+
+## PA2-07 · 2026-11-16 · Raw SAST results, then broader Semgrep rules and reusable scanning
+**Student prompts (verbatim):**
+> lets move forward, we will leave the write ups that I do for the end, when its time to submit.
+>
+> here is my section 4 row: "Negative quantity test - …" *(added to the journal verbatim)*
+
+> signed into sonarqube
+
+> lets go with both recommendations, and also future proof ourselves for further deliverables down the road
+
+**Agent output:**
+- **Raw baseline scan (run 43969079186):** Semgrep (`p/java`, `p/secrets`, `p/dockerfile`, 104 rules) found **1** issue (`dockerfile.security.missing-user-entrypoint`). SonarQube Cloud ("Sonar way core", 313 Java rules, 31 files / 1,433 LOC) found **0 issues, 0 hotspots** (checked by API in the student's signed-in browser and by a new pipeline export step). The quality gate fails only on the coverage condition (0% < 80%).
+- **Recommendation 1 (accepted):** broaden Semgrep to add `p/security-audit` and `p/owasp-top-ten`, so the triage has a real raw alert set, including false positives.
+- **Recommendation 2 (accepted):** keep the Trivy dependency CVEs in an appendix, not the confirmed-CWE ledger, because PA3 must remediate every confirmed CWE.
+- **Future-proofing:** `scripts/sast-scan.sh` is one reusable Semgrep scan (JSON, SARIF, text, one-line summary) for CI, Codespaces and the PA3 peer-repo run (Semgrep only). The workflow has a `semgrep_target` input for manual runs. `.semgrepignore` skips logs and evidence. `codeql-action` upgraded from v3 to v4 (v3 is deprecated in Dec 2026).

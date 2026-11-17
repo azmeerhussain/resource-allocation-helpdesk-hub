@@ -7,7 +7,7 @@
 #   1. build-test  : compile + unit tests (Maven)
 #   2. docker      : multi-stage Docker build, docker compose up (app + PostgreSQL), smoke test
 #                    + Trivy dependency/filesystem scan and container image scan
-#   3. semgrep     : SAST (Java, secrets, Dockerfile rulesets)
+#   3. semgrep     : SAST via scripts/sast-scan.sh (java, secrets, dockerfile, security-audit, owasp-top-ten)
 #   4. sonarqube   : SAST / code quality via SonarQube Cloud
 # All security scans are NON-BLOCKING in Phase 1 (they report findings but never fail the build),
 # as required by PA1 ("successful, non-blocking SAST and dependency scanning telemetry").
@@ -22,6 +22,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      semgrep_target:
+        description: "Path for Semgrep to scan (default: whole repo)"
+        required: false
+        default: "."
 
 permissions:
   contents: read
@@ -108,7 +113,7 @@ jobs:
       - name: Upload Trivy SARIF to Code Scanning
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: reports/trivy-fs.sarif
           category: trivy-fs
@@ -116,7 +121,7 @@ jobs:
       - name: Upload Trivy image SARIF to Code Scanning
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: reports/trivy-image.sarif
           category: trivy-image
@@ -138,21 +143,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Semgrep scan (non-blocking)
-        run: |
-          mkdir -p reports
-          semgrep scan --config p/java --config p/secrets --config p/dockerfile \
-            --metrics=off --sarif --output reports/semgrep.sarif || true
-          semgrep scan --config p/java --config p/secrets --config p/dockerfile \
-            --metrics=off --text --output reports/semgrep.txt || true
-          semgrep scan --config p/java --config p/secrets --config p/dockerfile \
-            --metrics=off --json --output reports/semgrep.json || true
-          cat reports/semgrep.txt
+      - name: Semgrep scan (non-blocking) - see scripts/sast-scan.sh
+        run: sh scripts/sast-scan.sh "${{ github.event.inputs.semgrep_target || '.' }}" reports
 
       - name: Upload Semgrep SARIF to Code Scanning
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: reports/semgrep.sarif
           category: semgrep

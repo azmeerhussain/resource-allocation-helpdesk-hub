@@ -1,0 +1,7 @@
+# AI Contribution Weight: [100%] AI Generated / [0%] Human Refactored (Claude, PA2-07)
+# Keep Semgrep focused on source and config: skip generated logs and evidence screenshots.
+:include .gitignore
+.git/
+docs/pipeline-logs/
+PA2/pipeline-logs/
+PA2/evidence/
