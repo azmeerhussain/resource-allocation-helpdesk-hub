@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Conceptual AI contribution | **Part 1 (Security requirements): ~90% AI / ~10% human. Part 2 (Abuse cases): ~85% AI / ~15% human** (the student specified the 4 required abuse cases and the fields). **Part 3 (Attack trees): ~85% AI / ~15% human** (the student chose the 3 abuse cases and the format). **Part 4 (Attack surface): ~90% AI / ~10% human** (the student defined the scope). **Part 5 (DFD & STRIDE): ~90% AI / ~10% human** (the student defined the method and required real code examples). Later parts are added below as they are written. |
+| Conceptual AI contribution | **Part 1 (Security requirements): ~90% AI / ~10% human. Part 2 (Abuse cases): ~85% AI / ~15% human** (the student specified the 4 required abuse cases and the fields). **Part 3 (Attack trees): ~85% AI / ~15% human** (the student chose the 3 abuse cases and the format). **Part 4 (Attack surface): ~90% AI / ~10% human** (the student defined the scope). **Part 5 (DFD & STRIDE): ~90% AI / ~10% human** (the student defined the method and required real code examples). **Part 6 (Mitigations): ~90% AI / ~10% human** (the student defined the table structure and traceability). **Whole document: ~88% AI / ~12% human**; the student's audit of these drafts is recorded in `.ai_logs/conceptual_journal.md` §3.  |
 | Human (student) | Wrote the prompt for each part (multi-turn, part-by-part chaining). Supplied the confirmed flaw set M1–M8 (`sast-triage-report.md`), where the classifications and rationales are the student's. Audits each AI draft (see `.ai_logs/conceptual_journal.md` §3). |
 | AI (Claude, `claude-opus-5-5`) | Drafted the text of each part from the student's prompt, the master spec, the generated code and M1–M8. |
 | Prompts (verbatim) | [`.ai_logs/pa2-session-log.md`](.ai_logs/pa2-session-log.md), entries PA2-09 onward |
@@ -419,4 +419,60 @@ These came out of this analysis and should be **reviewed by the student** before
 
 
 ## 6. Proposed Mitigations
-*(pending)*
+
+**Prompt (PA2-14):** *"Now give a fix for each threat and abuse case, link it to the SR and M it covers, and say whether PA3 already handles it. Put it all in a table."*
+
+**PA3 status key**, taken from the PA3 brief and the instructor's ReadMe update. PA3 must remediate *all confirmed CWEs in `sast-triage-report.md`* plus *exactly 3 STRIDE threats*, and meet five minimum requirements: (1) RS256/ES256 with an algorithm allowlist, (2) `exp`/`iss`/`aud` validation, (3) row-level authorization on the primary resource, (4) application-layer encryption of the sensitive field with the key from an environment variable, (5) input validation on all write endpoints.
+- ✅ **PA3 required:** a confirmed CWE in the triage report and/or a PA3 minimum requirement
+- 🟡 **Partly:** some of it is required by PA3, the rest is not
+- ⚪ **Not in PA3 scope yet:** a candidate for the 3 required STRIDE threats or for extra credit
+
+STRIDE references use `Component-Letter`, e.g. `P2-T` = TicketService, Tampering (section 5.3).
+
+### 6.1 Mitigation table
+
+| ID | Fix (Spring Boot implementation) | Abuse cases | STRIDE threats | SR | M / S | PA3 handles it? |
+|---|---|---|---|---|---|---|
+| **MIT-1** | Spring Security OAuth2 resource server: verify JWTs with the **public key** (RS256/ES256), algorithm allowlist (reject `none` and `HS256`), validate `exp`, `iss`, `aud`. Every route except `/actuator/health` requires a token. | AC-2, AC-4, AC-5, AC-7, AC-9 | Ext-S, P1-S, P1-E | SR-1 | M2, M6 | ✅ Min req 1 + 2, confirmed M2 |
+| **MIT-2** | Role-based access with `@PreAuthorize` per endpoint (`REQUESTER` / `IT_DIRECTOR` / `IT_ADMIN`), deny by default | AC-2, AC-5, AC-7, AC-9 | P1-E, P2-E, P3-E | SR-2 | M2 | ✅ Confirmed M2 |
+| **MIT-3** | Row-level authorization in the service layer: requesters only see/change their own tickets and allocations for the course/lab IDs in their token. Repository queries are scoped by owner. Return requires the owner or `IT_ADMIN`. | AC-3, AC-7 | P1-E, P3-T | SR-3 | M2, M4 | ✅ Min req 3 (see 6.3 on the "primary resource") |
+| **MIT-4** | Separation of duties: approve/reject only by `IT_DIRECTOR` and never on their own ticket; `/allocate` only by `IT_ADMIN` and only on APPROVED tickets | AC-2, AC-4 | P2-E | SR-4 | M2, M6 | ✅ Confirmed M2 / M6 |
+| **MIT-5** | Take `requester`, `reviewedBy`, `allocatedBy` and the event `actor` from the authenticated principal (`SecurityContext`) and remove them from request DTOs. Make `ticket_event` append-only: no `deleteByTicketId`; tickets are soft-deleted. | AC-4, AC-12 | Ext-S, Ext-R, P2-S, P2-R, DS2-R | SR-5 | M6 | ✅ Confirmed M6 |
+| **MIT-6** | Bean Validation on every write DTO with `@Valid`: `quantity` `@Positive @Max(50)`, `voucherAmount` `@DecimalMin("0.01") @Digits(…,2)` with a cap, `@Size` on strings and item lists, enum whitelists, `FAIL_ON_UNKNOWN_PROPERTIES` | AC-1, AC-5 | P2-T | SR-6 | M1 | ✅ Min req 5, confirmed M1 |
+| **MIT-7** | Database invariants through a migration: `CHECK (available_stock BETWEEN 0 AND total_stock)`, `CHECK (voucher_balance >= 0)`, `CHECK (quantity > 0)`, `NOT NULL`, FKs `allocation → asset/ticket` | AC-1, AC-6, AC-9 | DS1-T | SR-7 | M1, M3 | ✅ Part of the M1/M3 fixes |
+| **MIT-8** | Concurrency-safe allocation: `@Lock(PESSIMISTIC_WRITE)` repository method (`SELECT … FOR UPDATE`) that locks assets in a fixed ID order (avoids deadlocks), **or** `@Version` with a bounded retry; re-check ticket status under the lock so allocation stays idempotent | AC-6 | P2-D | SR-8 | M3 | ✅ Confirmed M3 |
+| **MIT-9** | Separate `AssetUpdateRequest` without `availableStock`, `status` or `licenseKey`; status is derived by the server; stock changes through an audited adjustment endpoint; block `DELETE` while allocations are outstanding | AC-9 | P1-T, P3-T, P3-D | SR-9 | (student review note), M2 | 🟡 Input validation (min req 5) covers part; the mass-assignment and delete rules are not a confirmed CWE |
+| **MIT-10** | Encrypt `license_key` / `issued_token` with AES-256-GCM through a JPA `AttributeConverter`, key from an environment variable (never committed). Response DTOs never include key material. A dedicated audited reveal endpoint for the owner only. Unique per-seat tokens instead of the shared master key. | AC-3, AC-11 (impact) | P1-I, P4-I, DS1-I | SR-10 | M4 | ✅ Min req 4, confirmed M4 |
+| **MIT-11** | Logging hygiene: remove or mask keys and tokens in every log statement (`AssetService:70`, `TicketService:295`, seeding); strip CR/LF from user input in logs (CWE-117); log security events with the authenticated principal | AC-3, AC-12 | P2-I, P3-I, P5-I, DS2-T, DS2-I, DS2-R | SR-11 | M4, M6 | 🟡 Secrets in logs = confirmed M4 ✅; log injection (5.4 #1) ⚪ |
+| **MIT-12** | Fix the state machine: on `APPROVED → REJECTED` release `RESERVED` assets; reservations expire after a set window; transitions checked in one place | AC-8 | P2-T | SR-12 | M5 | ✅ Confirmed M5 |
+| **MIT-13** | `@RestControllerAdvice` returns a generic message, an error code and a correlation ID. Stock, balances and other objects' IDs go only to the server log. | AC-10 | P1-I, P2-I | SR-13 | M7 | ✅ Confirmed M7 |
+| **MIT-14** | Credentials from environment or secrets with **no defaults** (`${DB_PASSWORD}` with no fallback, fail fast); `.env` git-ignored; remove the `5432` host port mapping; connect as a **least-privileged** app role, not the `POSTGRES_USER` superuser | AC-11 | DS1-S, DS1-D, DS1-E, TB2-I | SR-14 | M8 | 🟡 Credentials and port = confirmed M8 ✅; DB superuser (5.4 #2) ⚪ |
+| **MIT-15** | Non-root container (`USER app`, as in the PA1 Dockerfile); pin base images by digest; minimal JRE image | n/a | TB2-E, TB2-T | SR-15 | S4 | ✅ Confirmed S4 |
+| **MIT-16** | Pin every GitHub Action to a full commit SHA; least-privilege `permissions` per job; upgrade Spring Boot to a supported release and keep Trivy in the pipeline | n/a | P6-S, P6-E, TB2-E | SR-16 | S1, Trivy appendix | 🟡 SHA pinning = confirmed S1 ✅; the Spring Boot upgrade is recommended but not a confirmed CWE ⚪ |
+| **MIT-17** | TLS for any non-local deployment (reverse proxy or `server.ssl.*`) plus HSTS | n/a | Flow-S, Flow-T, Flow-I | SR-17 | n/a | ⚪ (5.4 #4) |
+| **MIT-18** | Abuse limits: rate limiting (e.g. Bucket4j or at the proxy) on submit, allocate and reveal; paged list endpoints (`Pageable`, max page size); a cap on ticket items; filter allocations in the DB query, not in memory | AC-5, AC-10 | P1-D, P4-D, DS2-D | SR-18 | n/a | ⚪ (5.4 #3) |
+| **MIT-19** | CI hygiene: the smoke test asserts status codes instead of printing responses that contain tokens; don't upload raw container logs, or redact them first | n/a | P6-I | SR-11, SR-16 | n/a | ⚪ (5.4 #5) |
+
+### 6.2 Coverage check: every abuse case has a fix
+
+| Abuse case | Fixed by | PA3 handles it? |
+|---|---|---|
+| AC-1 Negative quantity | MIT-6, MIT-7, (MIT-2/4 stop self-approval) | ✅ |
+| AC-2 Approve own ticket | MIT-1, MIT-2, MIT-4 | ✅ |
+| AC-3 Steal license keys | MIT-10, MIT-11, MIT-3, MIT-1 | ✅ |
+| AC-4 Fake approver name | MIT-5, MIT-1, MIT-4 | ✅ |
+| AC-5 Drain voucher pool | MIT-6, MIT-2, MIT-4 (MIT-18 limits) | ✅ (limits ⚪) |
+| AC-6 Race on last units | MIT-8, MIT-7 | ✅ |
+| AC-7 Return someone else's device | MIT-3, MIT-2 | ✅ |
+| AC-8 Lock up assets via workflow | MIT-12, MIT-2 | ✅ |
+| AC-9 Rewrite inventory directly | MIT-9, MIT-2, MIT-7 | 🟡 (authorization ✅; mass-assignment rule ⚪) |
+| AC-10 Map stock from errors | MIT-13 | ✅ |
+| AC-11 Direct DB access | MIT-14, MIT-10 | ✅ (least-privilege DB role ⚪) |
+| AC-12 Erase history | MIT-5 | ✅ |
+
+### 6.3 Open points for the student (✍️ decisions, not AI decisions)
+
+1. **Choose the 3 STRIDE threats for PA3.** The ⚪ items are the natural candidates: log injection (DS2-T, CWE-117), no TLS (Flow-I, CWE-319), unbounded lists / no rate limiting (P1-D, CWE-770), DB superuser (DS1-E, CWE-250), mass assignment of stock/status (P1-T, MIT-9), tokens in CI artifacts (P6-I). Each needs a one-line risk rationale in PA3.
+2. **"Primary resource" and "sensitive field" for Domain 2.** PA3 min reqs 3 and 4 say these are *"defined per domain in the master specification"*, but the current `ProjectPortalDomainServices.docx` does not name them for Domain 2. This analysis assumes **primary resource = Ticket** (with its allocations) and **sensitive field = `licenseKey` / `issuedToken`**. Confirm with the instructor before PA3.
+3. **Section 5.4 findings:** decide whether any should be added to `sast-triage-report.md`. Adding them makes them mandatory in PA3; leaving them out keeps them as STRIDE candidates or extra credit.
+

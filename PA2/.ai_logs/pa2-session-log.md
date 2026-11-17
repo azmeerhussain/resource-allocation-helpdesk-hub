@@ -166,3 +166,9 @@
 > Draw a data flow diagram in Mermaid that shows the trust boundaries. Then do STRIDE for every component, using real examples from our code.
 
 **Agent output:** A Level-1 Mermaid DFD (6 processes, 4 data stores, external entities, trust boundaries TB0–TB4, and the unintended path to the published DB port), validated with `mmdc`. The first draft wrongly showed CI writing to the host's container logs; the agent caught this and changed it to a separate CI-artifacts store before committing. Also a boundary table, a STRIDE matrix for **11 components**, and per-component threats tied to file and line references, which were checked with `grep` before writing. **5 new issues** came up that are not in M1–M8 (log injection CWE-117, DB superuser, unbounded lists CWE-770, no TLS CWE-319, keys in CI logs/artifacts). They are flagged for the student to decide on, not added to the triage ledger.
+
+## PA2-14 · 2026-11-16 · security-analysis.md, part 6: mitigations
+**Student prompt (verbatim):**
+> Now give a fix for each threat and abuse case, link it to the SR and M it covers, and say whether PA3 already handles it. Put it all in a table.
+
+**Agent output:** Re-read the PA3 brief and the instructor's ReadMe update to ground "does PA3 handle it" (confirmed CWEs + exactly 3 STRIDE threats + 5 minimum requirements). Section 6: **19 mitigations (MIT-1…MIT-19)**, each with a Spring Boot-specific fix, the abuse cases and STRIDE threats it addresses, the SR and M/S it covers, and its PA3 status (✅ / 🟡 / ⚪). A coverage table confirms all 12 abuse cases have a fix. There are three open decisions for the student: which 3 STRIDE threats PA3 will cover; that the master spec does **not** define Domain 2's "primary resource" and "sensitive field" (assumed Ticket and licenseKey/issuedToken, to confirm with the instructor); and whether to add the 5.4 findings to the triage ledger.
