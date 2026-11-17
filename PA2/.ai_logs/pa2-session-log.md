@@ -93,3 +93,11 @@
 **Student message (verbatim, per-file review notes):** see the `Human review:` line in each file header under `PA2/functional-codebase/`. The agent copied each note **exactly as written** by the student into the matching header: 26 files (controllers, DTOs, domain classes, enums, services, exceptions, `schema.sql`, `application.yml`). Files the student did not list stay `PENDING`: tests, repositories, the main class, `MockDataLoader`, `Dockerfile`, `docker-compose.yml`, `pom.xml`, `smoke-test.sh`.
 
 **Student message (verbatim, second batch of per-file review notes):** covers the tests, repositories, main class, `MockDataLoader`, mock-data README, `Dockerfile`, `docker-compose.yml`, `.dockerignore`, `pom.xml` and `smoke-test.sh`. The agent copied each note exactly as written into the matching header. Every file in `PA2/functional-codebase/` now has a student sign-off.
+
+## PA2-06 · 2026-11-16 · Manual (student-run) attack: negative quantity
+**Student prompt (verbatim):**
+> lets start step 1
+
+**Agent output:** PowerShell commands for a local Docker test. The student's PC could not run Docker (virtualization disabled in firmware), so the agent provided an equivalent bash/curl script for **GitHub Codespaces** and explained the Codespaces free quota when the student asked. The student created the codespace himself and moved this chat to his MacBook because his PC kept crashing.
+
+**Result (run by the student):** On a fresh database, a ticket with `quantity: -5`, approved by `"Anyone"` and allocated, raised laptop stock from 10 to **15** (total 10). Screenshots are in `PA2/evidence/`. This confirms a missing lower-bound check on quantity in `TicketService.allocate()` and that approval needs no authenticated identity.
