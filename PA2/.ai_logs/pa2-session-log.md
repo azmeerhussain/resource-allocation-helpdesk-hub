@@ -146,3 +146,11 @@
 > Now write the abuse cases. For each one, say who the attacker is, what they want and which endpoint they would use. Include the negative quantity one, approving your own ticket, stealing license keys and faking the approver's name.
 
 **Agent output:** Section 2 of `security-analysis.md`: 4 attacker profiles and **12 abuse cases (AC-1…AC-12)**, each with attacker, goal, endpoint(s), whether it works on the naive code today, the flaw and the preventing SRs, plus scenarios for the 4 the student required (AC-1 negative quantity, AC-2 self-approval, AC-3 key theft, AC-4 fake approver). AC-6 (race) is marked *likely, not yet exploited by hand*. Every other case is marked working, based on code reading, and only AC-1 was demonstrated by hand.
+
+## PA2-11 · 2026-11-16 · security-analysis.md, part 3: attack trees
+**Student prompt (verbatim):**
+> Make attack trees for three of the abuse cases: stealing license keys, approving your own ticket and overspending stock. Use Mermaid.
+>
+> based off context, are these good choices?
+
+**Agent output:** Confirmed the choice: the three trees span different layers (data exposure, authorization, input/concurrency) and the highest-impact confirmed flaws. Interpreted "overspending stock" as one goal with branches for AC-1, AC-5, AC-6, AC-7 and AC-9. Wrote three Mermaid attack trees with AND/OR gates and feasibility markers (✅ / ⚠️ / ❌ / ➖), each with its cheapest path and the SRs that cut it. All three were validated by rendering with `mmdc` before committing. Tree 2 includes a branch the naive code already blocks (editing an APPROVED ticket) and a post-PA3 branch (forged or stolen JWT), marked as not applicable yet.

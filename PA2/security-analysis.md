@@ -6,7 +6,7 @@
 
 | Item | Value |
 |---|---|
-| Conceptual AI contribution | **Part 1 (Security requirements): ~90% AI / ~10% human. Part 2 (Abuse cases): ~85% AI / ~15% human** (the student specified the 4 required abuse cases and the fields). Later parts are added below as they are written. |
+| Conceptual AI contribution | **Part 1 (Security requirements): ~90% AI / ~10% human. Part 2 (Abuse cases): ~85% AI / ~15% human** (the student specified the 4 required abuse cases and the fields). **Part 3 (Attack trees): ~85% AI / ~15% human** (the student chose the 3 abuse cases and the format). Later parts are added below as they are written. |
 | Human (student) | Wrote the prompt for each part (multi-turn, part-by-part chaining). Supplied the confirmed flaw set M1–M8 (`sast-triage-report.md`), where the classifications and rationales are the student's. Audits each AI draft (see `.ai_logs/conceptual_journal.md` §3). |
 | AI (Claude, `claude-opus-5-5`) | Drafted the text of each part from the student's prompt, the master spec, the generated code and M1–M8. |
 | Prompts (verbatim) | [`.ai_logs/pa2-session-log.md`](.ai_logs/pa2-session-log.md), entries PA2-09 onward |
@@ -104,7 +104,112 @@
 
 
 ## 3. Attack Trees (≥ 3 abuse cases)
-*(pending)*
+
+**Prompt (PA2-11):** *"Make attack trees for three of the abuse cases: stealing license keys, approving your own ticket and overspending stock. Use Mermaid."*
+
+**Legend:** **OR** = any child achieves the parent · **AND** = all children are required · ✅ works on the naive code · ⚠️ works but needs extra access or timing · ❌ blocked by the current code · ➖ not applicable yet · `Mx` = confirmed flaw from `sast-triage-report.md`
+
+### Tree 1: Steal license keys and voucher codes (AC-3)
+
+```mermaid
+%%{init: {'theme':'neutral'}}%%
+flowchart TD
+    R["GOAL: Obtain license keys / voucher codes<br/>(AC-3)"] --> O{{"OR"}}
+    O --> A1["1. Read them from the API"]
+    O --> A2["2. Read them from application logs"]
+    O --> A3["3. Read them from the database"]
+    O --> A4["4. Get one key legitimately,<br/>use it for the whole pool"]
+
+    A1 --> O1{{"OR"}}
+    O1 --> L1["GET /api/v1/assets/allocations<br/>(no filter) returns assignedSoftwareKeys<br/>✅ works | M4, M2"]
+    O1 --> L2["GET /api/v1/assets or /assets/{id}<br/>returns licenseKey field<br/>✅ works | M4"]
+    O1 --> N1{{"AND"}}
+    N1 --> L3["List tickets: GET /api/v1/assets/tickets<br/>✅ works | M2"]
+    N1 --> L4["GET /tickets/{id} returns allocations<br/>with issuedToken<br/>✅ works | M4"]
+
+    A2 --> N2{{"AND"}}
+    N2 --> L5["Gain access to container / log output<br/>⚠️ needs host or log-system access"]
+    N2 --> L6["Keys logged on asset create, seeding<br/>and allocation<br/>✅ present | M4"]
+
+    A3 --> N3{{"AND"}}
+    N3 --> L7["Reach PostgreSQL on published host port 5432<br/>⚠️ needs host-network access | M8"]
+    N3 --> L8["Log in with hard-coded helpdesk/helpdesk<br/>✅ in repo | M8"]
+    N3 --> L9["license_key / issued_token stored in plaintext<br/>✅ works | M4"]
+
+    A4 --> N4{{"AND"}}
+    N4 --> L10["Get one license allocation<br/>(self-approve, see Tree 2)<br/>✅ works | M2"]
+    N4 --> L11["Every seat receives the same master key<br/>✅ works | M4"]
+```
+
+**Cheapest path:** branch 1, a single unauthenticated `GET /api/v1/assets/allocations`. One HTTP request, no special access. Branch 4 shows why a single leak is a pool-wide breach: every seat shares the master key.
+**Cut by:** SR-10 (never return or log keys; encrypt at rest; unique per-seat tokens), SR-1/SR-3 (authenticated, owner-scoped access), SR-11 (log hygiene), SR-14 (no hard-coded DB credentials, no published DB port).
+
+### Tree 2: Approve your own ticket (AC-2)
+
+```mermaid
+%%{init: {'theme':'neutral'}}%%
+flowchart TD
+    R["GOAL: Receive assets without a real<br/>IT director approval (AC-2)"] --> O{{"OR"}}
+    O --> B1["1. Approve your own ticket via the API"]
+    O --> B2["2. Change a ticket after it was approved"]
+    O --> B3["3. Act as the IT director"]
+
+    B1 --> N1{{"AND"}}
+    N1 --> L1["Submit ticket<br/>POST /api/v1/assets/tickets<br/>✅ works"]
+    N1 --> L2["PUT /tickets/{id} with status APPROVED<br/>(no authentication or role check)<br/>✅ works | M2"]
+    N1 --> L3["POST /tickets/{id}/allocate<br/>(no role check)<br/>✅ works | M2"]
+    N1 --> O2{{"OR (optional: hide it)"}}
+    O2 --> L4["Set reviewedBy = 'IT Director'<br/>✅ works | M6 (AC-4)"]
+    O2 --> L5["Delete a PENDING attempt to wipe its history<br/>✅ works | M6 (AC-12)"]
+
+    B2 --> N2{{"AND"}}
+    N2 --> L6["Get a small request legitimately approved<br/>⚠️ needs real approval"]
+    N2 --> L7["PUT new items / quantities on the APPROVED ticket<br/>❌ blocked: only PENDING tickets are editable (409)"]
+
+    B3 --> O3{{"OR (relevant once auth exists, PA3)"}}
+    O3 --> L8["Forge a JWT with the IT_DIRECTOR role<br/>(alg=none, weak or leaked signing key)<br/>➖ N/A in naive code: no auth at all"]
+    O3 --> L9["Steal or phish a director's token<br/>➖ N/A in naive code"]
+```
+
+**Cheapest path:** branch 1, three API calls (submit, approve, allocate), optionally disguised with a fake `reviewedBy` (AC-4). Branch 2 is **already blocked** by the naive code (only PENDING tickets can be edited). Branch 3 is not applicable yet, but it becomes **the** path to defend once JWT authentication is added in PA3.
+**Cut by:** SR-1, SR-2, SR-4 (authentication, role checks, separation of duties so the approver cannot be the requester), SR-5 (identity from the token, append-only history). For branch 3 after PA3: asymmetric signing with `alg` pinned, plus key management (SR-1, SR-14).
+
+### Tree 3: Overspend stock, i.e. allocate more than exists (AC-1, AC-5, AC-6, AC-7, AC-9)
+
+```mermaid
+%%{init: {'theme':'neutral'}}%%
+flowchart TD
+    R["GOAL: Allocate more units or credit<br/>than the inventory really holds"] --> O{{"OR"}}
+    O --> C1["1. Inflate stock with a negative quantity<br/>(AC-1)"]
+    O --> C2["2. Race two allocations for the last units<br/>(AC-6)"]
+    O --> C3["3. Rewrite stock directly<br/>(AC-9)"]
+    O --> C4["4. Free units that are still checked out<br/>(AC-7)"]
+    O --> C5["5. Overspend the voucher balance<br/>(AC-5)"]
+
+    C1 --> N1{{"AND"}}
+    N1 --> L1["Ticket item with quantity -5<br/>(no lower bound)<br/>✅ proven by hand | M1"]
+    N1 --> L2["Approve it<br/>(self-approve, Tree 2)<br/>✅ works | M2"]
+    N1 --> L3["POST /allocate: 10 - (-5) = 15<br/>✅ proven by hand | M1"]
+
+    C2 --> N2{{"AND"}}
+    N2 --> L4["Two APPROVED tickets competing<br/>for the last unit(s)<br/>✅ works | M2"]
+    N2 --> L5["Send both POST /allocate at the same time<br/>⚠️ needs tight timing"]
+    N2 --> L6["Both read the same stock: no row lock,<br/>READ COMMITTED lost update<br/>⚠️ likely, not yet tested | M3"]
+
+    C3 --> L7["PUT /api/v1/assets/{id}<br/>availableStock: 9999<br/>✅ works | M2 + review note"]
+
+    C4 --> N4{{"AND"}}
+    N4 --> L8["Read another team's allocationId<br/>GET /api/v1/assets/allocations<br/>✅ works | M2, M4"]
+    N4 --> L9["POST /assets/{id}/return with that allocationId<br/>(no ownership check)<br/>✅ works | M2"]
+
+    C5 --> O5{{"OR"}}
+    O5 --> L10["voucherAmount -1000 adds credit<br/>✅ works | M1"]
+    O5 --> L11["Huge voucherAmount with self-approval<br/>✅ works | M1, M2"]
+```
+
+**Cheapest path:** branch 3, a single `PUT /assets/{id}` setting `availableStock`. Branch 1 is the **proven** path (`PA2/evidence/`). Branch 2 (the race) is the only one that survives fixing input validation and authorization, which is why SR-8 (row locking) and SR-7 (DB `CHECK` constraints) are needed as separate controls.
+**Cut by:** SR-6 (quantity and amount bounds), SR-7 (DB invariants), SR-8 (locking and idempotent allocate), SR-9 (no direct stock or status writes), SR-3 (ownership check on return), SR-2/SR-4 (no self-approval).
+
 
 ## 4. Attack Surface Map
 *(pending)*
