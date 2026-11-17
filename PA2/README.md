@@ -6,6 +6,6 @@
 |---|---|---|
 | functional-codebase/ (naive happy-path code + tests) | [`functional-codebase/`](functional-codebase/) | ✅ built, 19/19 API tests pass |
 | sast-triage-report.md | [`sast-triage-report.md`](sast-triage-report.md) | ✅ drafted (student classifications) |
-| security-analysis.md | [`security-analysis.md`](security-analysis.md) | ✅ all 6 parts drafted (student audit pending) |
-| AI logs (session log, conceptual journal) | [`.ai_logs/`](.ai_logs/) | in progress |
+| security-analysis.md | [`security-analysis.md`](security-analysis.md) | ✅ complete (6 parts; student audit in journal §3.2) |
+| AI logs (session log, conceptual journal) | [`.ai_logs/`](.ai_logs/) | ✅ complete |
 | Pipeline execution logs | [`pipeline-logs/`](pipeline-logs/) | ✅ |

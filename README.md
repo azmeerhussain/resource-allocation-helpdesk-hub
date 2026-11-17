@@ -23,6 +23,13 @@ Exact prompts typed by the student (verbatim, typos kept):
 (Status messages that contained no instructions, such as "okay the github is connecctd", are in the full export: `docs/ai-history/claude-session-export.md`.)
 
 
+## Assignments
+
+| Assignment | Location |
+|---|---|
+| PA1: spec, agent environment, DevSecOps pipeline | Repository root (as submitted under tag `project-assignment-1`) |
+| PA2: naive baseline, SAST triage, security analysis | [`PA2/`](PA2/README.md) |
+
 ## PA1 deliverables
 
 | File | Purpose |

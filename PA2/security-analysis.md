@@ -470,7 +470,7 @@ STRIDE references use `Component-Letter`, e.g. `P2-T` = TicketService, Tampering
 | AC-11 Direct DB access | MIT-14, MIT-10 | ✅ (least-privilege DB role ⚪) |
 | AC-12 Erase history | MIT-5 | ✅ |
 
-### 6.3 Open points for the student (✍️ decisions, not AI decisions)
+### 6.3 Open points carried into PA3 (student decisions, not AI decisions)
 
 1. **Choose the 3 STRIDE threats for PA3.** The ⚪ items are the natural candidates: log injection (DS2-T, CWE-117), no TLS (Flow-I, CWE-319), unbounded lists / no rate limiting (P1-D, CWE-770), DB superuser (DS1-E, CWE-250), mass assignment of stock/status (P1-T, MIT-9), tokens in CI artifacts (P6-I). Each needs a one-line risk rationale in PA3.
 2. **"Primary resource" and "sensitive field" for Domain 2.** PA3 min reqs 3 and 4 say these are *"defined per domain in the master specification"*, but the current `ProjectPortalDomainServices.docx` does not name them for Domain 2. This analysis assumes **primary resource = Ticket** (with its allocations) and **sensitive field = `licenseKey` / `issuedToken`**. Confirm with the instructor before PA3.

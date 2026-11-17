@@ -25,7 +25,7 @@
 ### 1.2 Verification Telemetry Access Checklist
 
 - [x] Primary session logs saved to the `/.ai_logs/` directory: root index [`/.ai_logs/README.md`](../../.ai_logs/README.md) → [`pa2-session-log.md`](pa2-session-log.md) (manual log with dated entries, verbatim prompts and an output summary for each prompt)
-  > External Chat Cloud Share Link 1: ✍️ *[student: create a share link of this Claude conversation and paste it here; the session URL below opens only for the owner]*
+  > External Chat Cloud Share Link 1: Not used. A manual session log with dated entries and verbatim prompts is provided instead ([`pa2-session-log.md`](pa2-session-log.md)), as the telemetry rule allows when no exported report is available.
   > Session URL (owner access): https://claude.ai/code/session_01VYTSL9tbQAUzzMVpp9wZR6
 
 ---
